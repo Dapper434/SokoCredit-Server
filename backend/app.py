@@ -26,12 +26,12 @@ def create_app(config_name : str = None) -> Flask:
     mail.init_app(app)
 
     """import models here to avoid circular imports, and to ensure they are registered with SQLAlchemy"""
-    from foundation import models as foundation_models
+    from foundations import models as foundation_models
 
-    from foundation.routes import foundation_bp
+    from foundations.routes import foundation_bp
     app.register_blueprint(foundation_bp, url_prefix="/api/auth")
 
-    from foundation.auth import register_jwt_callbacks
+    from foundations.auth import register_jwt_callbacks
     register_jwt_callbacks(jwt)
 
     #provide a working route you can visit to check if the app is running, and to test the health of the app
