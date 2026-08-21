@@ -158,3 +158,6 @@ def register_jwt_callbacks(jwt_manager) -> None:
     @jwt_manager.unauthorized_loader
     def missing_token(reason):
         return jsonify({"error": f"Missing token: {reason}"}), 401
+    
+def get_current_user() -> User:
+    return current_user
