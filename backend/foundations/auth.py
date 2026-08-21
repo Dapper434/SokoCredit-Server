@@ -85,3 +85,35 @@ def register_user(
         organization_id=organization_id,
     )
     return user
+
+#admin registers their new lending institution
+def register_organization(
+    name: str,
+    slug: str,
+    admin_email: str,
+    admin_password: str,
+    admin_full_name: str,
+) -> tuple[Organization, User]:
+    # only place where organisation id gets created
+    if Organization.query.filter_by(slug=slug).first():
+        raise AuthError("An organization with this slug already exists.", 409)
+ 
+    org = Organization(name=name, slug=slug)
+    db.session.add(org)
+    db.session.flush()
+    
+    """
+    assigns org.id without committing yet
+    gives us a working organisation id but also ensures we can 
+    roll back incase something goes worng
+    """
+    
+    admin = register_user(
+        organization_id=org.id,
+        email=admin_email,
+        password=admin_password,
+        full_name=admin_full_name,
+        role="admin",
+    )
+    db.session.commit()
+    return org, admin
