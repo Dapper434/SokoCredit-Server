@@ -189,3 +189,22 @@ def role_required(*allowed_roles: str):
             return fn(*args, **kwargs)
         return wrapper
     return decorator
+
+""" 
+Restricts routes to a specific permission string
+Allows simple change of permissions by simply adding them to the permissions dictionary
+"""
+def permission_required(permission: str):
+
+    def decorator(fn):
+        @wraps(fn)
+        @jwt_required()
+        def wrapper(*args, **kwargs):
+            claims = get_jwt()
+            role = claims.get("role")
+            granted = PERMISSIONS.get(role, set())
+            if "*" not in granted and permission not in granted:
+                return jsonify({"error": f"Missing permission: {permission}"}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
