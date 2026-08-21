@@ -137,3 +137,24 @@ def issue_tokens(user: User) -> dict:
         "access_token": create_access_token(identity=str(user.id), additional_claims=claims),
         "refresh_token": create_refresh_token(identity=str(user.id), additional_claims=claims),
     }
+
+#JWT wirings, to get the current user from the token and to check if the user is active
+def register_jwt_callbacks(jwt_manager) -> None:
+    # define a user lookup callback to load the user from the database using the identity in the JWT
+    @jwt_manager.user_lookup_loader
+    def load_user_from_token(_jwt_header, jwt_data):
+        user_id = jwt_data["sub"]
+        return db.session.get(User, int(user_id))
+
+    # define a user loader callback to check if the user is active before allowing access to protected routes
+    @jwt_manager.expired_token_loader
+    def expired_token(_jwt_header, _jwt_data):
+        return jsonify({"error": "Token has expired."}), 401
+
+    @jwt_manager.invalid_token_loader
+    def invalid_token(reason):
+        return jsonify({"error": f"Invalid token: {reason}"}), 401
+ 
+    @jwt_manager.unauthorized_loader
+    def missing_token(reason):
+        return jsonify({"error": f"Missing token: {reason}"}), 401
