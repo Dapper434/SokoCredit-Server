@@ -208,3 +208,8 @@ def permission_required(permission: str):
             return fn(*args, **kwargs)
         return wrapper
     return decorator
+
+def verify_organization_access(resource_organization_id: int) -> None:
+    claims = get_jwt()
+    if claims.get("organization_id") != resource_organization_id:
+        raise AuthError("This resource does not belong to your organization.", 403)
