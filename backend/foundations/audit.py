@@ -17,6 +17,7 @@ def log_action(
 ) -> AuditLog:
     
     # validate the action parameter to ensure it is one of the allowed actions
+    #validate at the boundary to ensure the input is ok before doing anything with it
 
     if action not in ("create", "update", "delete"):
         raise ValueError(f"Invalid action: {action}")
