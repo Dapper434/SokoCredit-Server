@@ -50,3 +50,11 @@ def signup_organization():
         "user": user_schema.dump(admin),
         **tokens,
     }), 201
+
+
+@foundation_bp.post("/login")
+def login():
+    data = LoginSchema().load(request.get_json() or {})
+    user = authenticate_user(data["email"], data["password"])
+    tokens = issue_tokens(user)
+    return jsonify({"user": user_schema.dump(user), **tokens}), 200
