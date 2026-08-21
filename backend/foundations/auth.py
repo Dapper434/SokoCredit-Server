@@ -129,3 +129,11 @@ def authenticate_user(email: str, password: str) -> User:
     user.last_login_at = datetime.now(timezone.utc)
     db.session.commit()
     return user
+
+#issue tokens
+def issue_tokens(user: User) -> dict:
+    claims = {"organization_id": user.organization_id, "role": user.role}
+    return {
+        "access_token": create_access_token(identity=str(user.id), additional_claims=claims),
+        "refresh_token": create_refresh_token(identity=str(user.id), additional_claims=claims),
+    }
