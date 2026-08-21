@@ -161,3 +161,31 @@ def register_jwt_callbacks(jwt_manager) -> None:
     
 def get_current_user() -> User:
     return current_user
+
+"""
+permissions dictionary mapes each role to a set of 
+permission strings its allowed to do
+"""
+PERMISSIONS = {
+    "loan_officer": {"customer:create", "loan:create", "repayment:record"},
+    "manager": {"customer:create", "loan:create", "loan:approve", "repayment:record", "reports:view"},
+    "admin": {
+        "customer:create", "loan:create", "loan:approve", "loan:disburse",
+        "repayment:record", "reports:view", "user:manage",
+    },
+    "super_admin": {"*"},  # everything, including cross-module admin actions
+}
+
+
+def role_required(*allowed_roles: str):
+    #Simple permissions checks, ie are they in the named roles
+    def decorator(fn):
+        @wraps(fn)
+        @jwt_required()
+        def wrapper(*args, **kwargs):
+            claims = get_jwt()
+            if claims.get("role") not in allowed_roles:
+                return jsonify({"error": "Insufficient role for this action."}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
