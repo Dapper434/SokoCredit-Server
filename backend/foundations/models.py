@@ -9,7 +9,7 @@ ROLES = ("loan_officer", "manager", "admin", "super_admin")
 def utcnow():
     return datetime.now(timezone.utc)
 
-class Organisation(db.Model):
+class Organization(db.Model):
     __tablename__ = "organizations"
  
     id = db.Column(db.Integer, primary_key=True)
