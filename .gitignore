@@ -1,0 +1,20 @@
+# Secrets - NEVER commit this
+.env
+ 
+# Virtual environment
+venv/
+env/
+ 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+ 
+# Database (each dev generates their own locally via `flask db upgrade`)
+*.db
+*.sqlite3
+ 
+# IDE
+.vscode/
+.idea/
