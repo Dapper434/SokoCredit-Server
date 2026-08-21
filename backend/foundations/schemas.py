@@ -12,3 +12,10 @@ class OrganizationSignupSchema(Schema):
     admin_email = fields.Email(required=True)
     admin_password = fields.Str(required=True, load_only=True, validate=validate.Length(min=8))
     admin_full_name = fields.Str(required=True, validate=validate.Length(min=2, max=150))
+
+
+class RegisterUserSchema(Schema):
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, load_only=True, validate=validate.Length(min=8))
+    full_name = fields.Str(required=True, validate=validate.Length(min=2, max=150))
+    role = fields.Str(required=True, validate=validate.OneOf(ROLES))
