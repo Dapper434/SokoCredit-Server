@@ -1,0 +1,14 @@
+from marshmallow import Schema, fields, validate
+
+from foundations.models import ROLES
+
+class OrganizationSignupSchema(Schema):
+    name = fields.Str(required=True, validate=validate.Length(min=2, max=150))
+    slug = fields.Str(
+        required=True,
+        # make sure the slug is unique and only contains lowercase letters, numbers, and hyphens
+        validate=validate.Regexp(r"^[a-z0-9-]+$", error="Slug must be lowercase letters, numbers, hyphens only."),
+    )
+    admin_email = fields.Email(required=True)
+    admin_password = fields.Str(required=True, load_only=True, validate=validate.Length(min=8))
+    admin_full_name = fields.Str(required=True, validate=validate.Length(min=2, max=150))
