@@ -58,3 +58,16 @@ def login():
     user = authenticate_user(data["email"], data["password"])
     tokens = issue_tokens(user)
     return jsonify({"user": user_schema.dump(user), **tokens}), 200
+
+
+#Exchange a refresh token for a new access token.
+@foundation_bp.post("/refresh")
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    new_access_token = create_access_token(
+        identity=identity,
+        additional_claims={"organization_id": claims["organization_id"], "role": claims["role"]},
+    )
+    return jsonify({"access_token": new_access_token}), 200
