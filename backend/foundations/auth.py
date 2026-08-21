@@ -101,7 +101,7 @@ def register_organization(
     org = Organization(name=name, slug=slug)
     db.session.add(org)
     db.session.flush()
-    
+
     """
     assigns org.id without committing yet
     gives us a working organisation id but also ensures we can 
@@ -117,3 +117,15 @@ def register_organization(
     )
     db.session.commit()
     return org, admin
+
+#authenticate user and update last_login_at
+def authenticate_user(email: str, password: str) -> User:
+    user = User.query.filter_by(email=email.lower().strip()).first()
+    if user is None or not user.is_active or not verify_password(password, user.password_hash):
+        # Deliberately identical error for "no such user" and "wrong password"
+        # so login responses can't be used to enumerate registered emails.
+        raise AuthError("Invalid email or password.", 401)
+ 
+    user.last_login_at = datetime.now(timezone.utc)
+    db.session.commit()
+    return user
