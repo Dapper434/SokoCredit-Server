@@ -40,3 +40,48 @@ def hash_password(plain_password: str) -> str:
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(plain_password.encode("utf-8"), password_hash.encode("utf-8"))
+
+
+#register new user, and log the action in the audit log
+def register_user(
+    # parameters for the register_user function, which will create a new user in the database and log the action in the audit log
+
+    organization_id: int,
+    email: str,
+    password: str,
+    full_name: str,
+    role: str = "loan_officer",
+    actor_id: Optional[int] = None,
+) -> User:
+    
+    # validate role from ROLES tuple
+    if role not in ROLES:
+        raise AuthError(f"Invalid role '{role}'. Must be one of {ROLES}.", 400)
+
+    # check if user with email already exists in the organization, if so raise an error
+    if User.query.filter_by(email=email.lower().strip()).first():
+        raise AuthError("A user with this email already exists.", 409)
+
+    # create the user and commit to the database
+    user = User(
+        organization_id=organization_id,
+        email=email.lower().strip(),
+        password_hash=hash_password(password),
+        full_name=full_name,
+        role=role,
+    )
+    db.session.add(user)
+    db.session.commit()
+
+    # log the action in the audit log, using the actor_id if provided, otherwise using the newly created user's id
+    log_action(
+        actor_id=actor_id if actor_id is not None else user.id,
+        entity_type="User",
+        entity_id=user.id,
+        action="create",
+        #action is create thus before is None, after is the snapshot of the user after creation
+        before=None, 
+        after={"email": user.email, "role": user.role, "organization_id": organization_id},
+        organization_id=organization_id,
+    )
+    return user
