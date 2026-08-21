@@ -71,3 +71,27 @@ def refresh():
         additional_claims={"organization_id": claims["organization_id"], "role": claims["role"]},
     )
     return jsonify({"access_token": new_access_token}), 200
+
+
+@foundation_bp.get("/me")
+@jwt_required()
+def me():
+    user = get_current_user()
+    return jsonify(user_schema.dump(user)), 200
+
+#Add another staff member to the caller's own organization.
+@foundation_bp.post("/users")
+@role_required("admin", "super_admin")
+def add_teammate():
+    
+    data = RegisterUserSchema().load(request.get_json() or {})
+    actor = get_current_user()
+    new_user = register_user(
+        organization_id=actor.organization_id,
+        email=data["email"],
+        password=data["password"],
+        full_name=data["full_name"],
+        role=data["role"],
+        actor_id=actor.id,
+    )
+    return jsonify(user_schema.dump(new_user)), 201
