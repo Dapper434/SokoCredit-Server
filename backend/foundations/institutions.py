@@ -121,3 +121,34 @@ def attach_document(
     )
 
     return doc
+
+
+def add_market(
+    lending_institution_id:str,
+    market_name:str,
+    actor_id:int
+) -> InstitutionMarket:
+    #adds institution's operaing markets
+    existing_count = InstitutionMarket.query.filter_by(
+        lending_institution_id=lending_institution_id
+    ).count()
+    if existing_count >= MAX_MARKETS_PER_INSTITUTION:
+        raise AuthError(f"An institution may list only {MAX_MARKETS_PER_INSTITUTION} markets.", 400)
+
+    market = InstitutionMarket(
+        lending_institution_id=lending_institution_id,
+        market_name=market_name,
+    )
+    db.session.add(market)
+    db.session.commit()
+
+    log_action(
+        actor_id = actor_id,
+        entity_type="InstitutionMarket",
+        entity_id=market.id,
+        action="create",
+        before=None,
+        after={"market_name":market_name},
+        lending_institution_id=lending_institution_id
+    )
+    return market
