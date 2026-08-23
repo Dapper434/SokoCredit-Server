@@ -107,3 +107,24 @@ class AuditLog(db.Model):
 
     def __repr__(self):
         return f"<AuditLog {self.entity_type} #{self.entity_id} {self.action}>"
+
+
+class InstitutionDocument(db.Model):
+    #compliance document uploads captured during onboarding
+    #stores metadata - file_url points & storage location
+
+    __tablename__ = "institution_documents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    lending_institution_id = db.Column(
+        db.Integer, db.ForeignKey("lending_institutions.id"), nullable=False, index=True
+    )
+    document_type = db.Column(db.String(50), nullable=False)
+    file_url = db.Column(db.String(500), nullable=False)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    uploaded_at = db.column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+
+    lending_institution = db.relationship("LendingInstitution", back_populates="documents")
+
+    def __repr__(self):
+        return f"<InstitutionDocument {self.document_type} inst={self.lending_institution_id}>"
