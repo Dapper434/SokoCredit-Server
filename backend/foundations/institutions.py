@@ -83,7 +83,7 @@ def register_instistution(
     )
 
     #auto approve for now
-    #approve_institution(institution.id,actor=None)
+    approve_institution(institution.id,actor=None)
 
     db.session.refresh(institution)
     db.session.refresh(admin)
@@ -193,7 +193,7 @@ def approve_institution(
     pending_admins = User.query.filter_by(
         lending_institution_id = lending_institution_id, status="pending"      
     ).all()
-    
+
     for admin in pending_admins:
         admin.status = "active"
 
@@ -209,6 +209,13 @@ def approve_institution(
         lending_institution=institution.id,
     )
     return institution
+
+"""
+ To remove approve institution auto call:
+  -> Remove auto call from inside register institution
+  -> Expose this function behind a route restricted to a platform admin
+     in foundation.routes.py that passes the reviewer's real actor_id
+"""
 
     
 
