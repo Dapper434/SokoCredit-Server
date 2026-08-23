@@ -9,9 +9,60 @@ INSTITUTION_STATUSES=("pending_review","active","suspended")
 #individual staff statuses updated by institution admins
 USER_STATUSES=("pending","active","suspended")
 
+
 #freshy called every time a row is inserted
 def utcnow():
     return datetime.now(timezone.utc)
+
+"""replace organization model with lending institution model"""
+
+class LendingInstitution(db.Model):
+   __tablename__ = "lending_institutions"
+   __table_args__ = (
+       db.CheckConstraint(f"status IN {INSTITUTION_STATUSES}", name="ck_institutions_status_valid"),
+   )
+
+   id = db.Column(db.Integer, primary_key=True)
+
+   #Business identity & physical prescence -> page 1
+   registered_business_name = db.Column(db.String(255), nullable=False)
+   registration_number = db.Column(db.String(100), unique=True, nullable=False)
+   #BRS reg / cert no
+   kra_pin = db.Column(db.String(50), unique=True, nullable=False)
+   operating_liscence_type = db.Column(db.String(100), nullable=False)
+   cbk_liscence_number = db.Column(db.String(100), unique=True, nullable=False)
+   head_office_address = db.Column(db.String(255), nullable=False)
+   head_office_lat = db.Column(db.Numeric(9,6), nullable=True)
+   head_office_long = db.Column(db.Numeric(9,6), nullable=True)
+
+   #Regulatory compliance & operation footprint -> page 2
+   county_business_permit_number = db.Column(db.String(255), unique=True, nullable=False)
+   odpc_registration_number = db.Column(db.String(100), nullable=True)
+   estimated_staff_count = db.Column(db.Integer, nullable=True)
+
+   #operational settlement -> page 3
+   bank_name = db.Column(db.String(255), nullable=False)
+   bank_account_number = db.Column(db.String(100), unique=True, nullable=False)
+   collection_paybill_number = db.Column(db.String(20), nullable=False)
+   default_interest_rate = db.Column(db.Numeric(6,4), nullable=False)
+   default_penalty_rate = db.Column(db.Numeric(6,4), nullable=False)
+   status = db.Column(db.String(20), nullable=False, default="pending_review")
+   created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+
+   users = db.relationship("User", back_populates="lending_institution", lazy="dynamic")
+   documents = db.relationship("InstitutionDocument", back_populates="lending_institution", lazy="dynamic")
+   markets = db.relationship("InstitutionMarket", back_populates="lending_institution", lazy="dynamic")
+
+   def __repr__(self):
+       return f"<LendingInstitution {self.id} {self.registered_business_name}>"
+
+
+
+
+
+
+
+
 
 
 class User(db.Model):
