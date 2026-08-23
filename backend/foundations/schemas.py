@@ -66,9 +66,10 @@ class UserSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
     last_login_at = fields.DateTime(dump_only=True, allow_none=True)
 
-class OrganizationSchema(Schema):
+class LendingInstitutionSchema(Schema):
     id = fields.Int(dump_only=True)
-    name = fields.Str(dump_only=True)
-    slug = fields.Str(dump_only=True)
-    is_active = fields.Bool(dump_only=True)
+    registered_business_name = fields.Str(dump_only=True)
+    registration_number = fields.Str(dump_only=True)
+    kra_pin = fields.Str(dump_only=True)
+    status = fields.Str(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
