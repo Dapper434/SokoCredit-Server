@@ -128,3 +128,20 @@ class InstitutionDocument(db.Model):
 
     def __repr__(self):
         return f"<InstitutionDocument {self.document_type} inst={self.lending_institution_id}>"
+
+
+class InstitutionMarket(db.Model):
+    #markets an institution operates in
+
+    __tablename__ = "institution_markets"
+
+    id = db.Column(db.Integer, primary_key=True)
+    lending_institution_id = db.Column(
+        db.Integer, db.ForeignKey("lending_institutions.id"), nullable=False, index=True
+    )
+    market_name = db.Column(db.String(150), nullable=False)
+
+    lending_institution = db.relationship("LendingInstitution", back_populates="markets")
+
+    def __repr__(self):
+        return f"<InstitutionMarket {self.market_name} inst={self.lending_institution_id}>"
