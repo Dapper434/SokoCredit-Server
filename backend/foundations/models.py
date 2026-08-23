@@ -57,6 +57,34 @@ class LendingInstitution(db.Model):
        return f"<LendingInstitution {self.id} {self.registered_business_name}>"
 
 
+class User(db.Model):
+    #Lender staff - loan officers, managers, admins, super_admins
+
+    __tablename__ = "users"
+    __table_args__ = (
+        db.CheckConstraint(f"role IN {ROLES}", name="ck_users_role_valid"),
+        db.CheckConstraint(f"status IN {USER_STATUSES}", name="ck_users_status_valid"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    lending_institution_id = db.Column(
+        db.Integer, db.ForeignKey("lending_institutions.id"), nullable=False, index=True
+    )
+
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    phone_number = db.Column(db.String(20), unique=True, nullable=True)
+    national_id_number = db.Column(db.String(20), unique=True, nullable=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="loan_officer")
+    status = db.Column(db.String(20), nullable=False, default="active")
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+    last_login_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    lending_institution = db.relationship("LendingInstitution", back_populates="users")
+
+    def __repr__(self):
+        return f"<User {self.id} {self.email} institution={self.lending_institution_id}>"
 
 
 
