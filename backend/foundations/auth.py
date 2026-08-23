@@ -93,7 +93,7 @@ def register_user(
 #authenticate user and update last_login_at
 def authenticate_user(email: str, password: str) -> User:
     user = User.query.filter_by(email=email.lower().strip()).first()
-    if user is None or not user.is_active or not verify_password(password, user.password_hash):
+    if user is None or not user.status != "active" or not verify_password(password, user.password_hash):
         # Deliberately identical error for "no such user" and "wrong password"
         # so login responses can't be used to enumerate registered emails.
         raise AuthError("Invalid email or password.", 401)
@@ -104,7 +104,7 @@ def authenticate_user(email: str, password: str) -> User:
 
 #issue tokens
 def issue_tokens(user: User) -> dict:
-    claims = {"organization_id": user.organization_id, "role": user.role}
+    claims = {"lending_institution_id": user.lending_institution_id, "role": user.role}
     return {
         "access_token": create_access_token(identity=str(user.id), additional_claims=claims),
         "refresh_token": create_refresh_token(identity=str(user.id), additional_claims=claims),
@@ -135,7 +135,7 @@ def get_current_user() -> User:
     return current_user
 
 """
-permissions dictionary mapes each role to a set of 
+permissions dictionary maps each role to a set of 
 permission strings its allowed to do
 """
 PERMISSIONS = {
@@ -181,7 +181,7 @@ def permission_required(permission: str):
         return wrapper
     return decorator
 
-def verify_organization_access(resource_organization_id: int) -> None:
+def verify_institution_access(resource_lending_institution_id: int) -> None:
     claims = get_jwt()
-    if claims.get("organization_id") != resource_organization_id:
+    if claims.get("lending_institution_id") != resource_lending_institution_id:
         raise AuthError("This resource does not belong to your organization.", 403)
