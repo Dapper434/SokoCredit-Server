@@ -89,3 +89,35 @@ def register_instistution(
     db.session.refresh(admin)
     return institution, admin
 
+def attach_document(
+    lending_institution_id: int,
+    document_type:str,
+    file_url: str,
+    uploaded_by: int,
+) -> InstitutionDocument:
+    #records metadata for compliance documents upload
+
+    institution = db.session.get(LendingInstitution, lending_institution_id)
+    if institution is None:
+        raise AuthError("No such institution", 404)
+
+    doc = InstitutionDocument(
+        lending_institution = lending_institution_id,
+        document_type=document_type,
+        file_url=file_url,
+        uploaded_by=uploaded_by,
+    )
+    db.session.add(doc)
+    db.session.commit()
+
+    log_action(
+        actor_id=uploaded_by,
+        entity_type="InstitutionDocument",
+        entity_id=doc.id,
+        action="create",
+        before=None,
+        after={"document_type": document_type, "file_url": file_url},
+        lending_institution_id=lending_institution_id,
+    )
+
+    return doc
