@@ -156,19 +156,44 @@ def add_market(
 def submit_for_compliance_review(
      lending_institution_id:int,
      actor_id:int,
-    ) -> Lendinginstitution:
+    ) -> LendingInstitution:
+
+    institution = db.session.get(LendingInstitution, lending_institution_id)
+    if institution is None:
+        raise AuthError("No such institution", 404)
+
+    log_action(
+        actor_id=actor_id,
+        entity_type="LendingInstitution",
+        entity_id=institution.id,
+        action="update",
+        before={"status": institution.status},
+        after={"status": institution.status, "submitted_for_review":True},
+        lending_institution=institution.id,
+    )
+    return institution
+
+
+def approve_institution(
+    lending_institution_id:int,
+    actor_id:Optional[int]=None,
+) -> LendingInstitution:
     #flips institution from pending to active
 
     institution = db.session.get(LendingInstitution, lending_institution_id)
     if institution is None:
         raise AuthError("No such institution", 404)
 
-    before_status = institution_status
+    before_status = institution.status
     institution.status = "active"
 
+    before_status = institution.status
+    institution.status = "active"
+    
     pending_admins = User.query.filter_by(
-       lending_institution_id = lending_institution_id, status="pending"      
+        lending_institution_id = lending_institution_id, status="pending"      
     ).all()
+    
     for admin in pending_admins:
         admin.status = "active"
 
@@ -177,14 +202,15 @@ def submit_for_compliance_review(
     log_action(
         actor_id=actor_id,
         entity_type="LendingInstitution",
-        entity_id=lending_institution_id,
+        entity_id=institution.id,
         action="update",
         before={"status": before_status},
-        after={"status": "active"},
-        lending_institution_id=lending_institution_id
+        after={"status": institution.status},
+        lending_institution=institution.id,
     )
     return institution
 
+    
 
 
 
