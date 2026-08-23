@@ -5,25 +5,26 @@ from marshmallow import ValidationError
 from foundations.auth import (
     AuthError,
     register_user,
-    register_organization,
     authenticate_user,
     issue_tokens,
     get_current_user,
     role_required,
 )
 
+from foundations.institutions import register_institution, attach_document, add_market
+
 from foundations.schemas import (
-    OrganizationSignupSchema,
+    InstitutionRegistrationSchema,
     RegisterUserSchema,
     LoginSchema,
     UserSchema,
-    OrganizationSchema,
+    LendingInstitutionSchema,
 )
 
 foundation_bp = Blueprint("foundation", __name__)
 
 user_schema = UserSchema()
-organization_schema = OrganizationSchema()
+institution_schema = LendingInstitutionSchema()
 
 @foundation_bp.errorhandler(AuthError)
 def handle_auth_error(err: AuthError):
@@ -36,17 +37,16 @@ def handle_validation_error(err: ValidationError):
 # onboard an organization and its admin user onto the platform
 @foundation_bp.post("/organizations")
 def signup_organization():
-    data = OrganizationSignupSchema().load(request.get_json() or {})
-    org, admin = register_organization(
-        name=data["name"],
-        slug=data["slug"],
-        admin_email=data["admin_email"],
-        admin_password=data["admin_password"],
-        admin_full_name=data["admin_full_name"],
-    )
+    data = InstitutionRegistrationSchema().load(request.get_json() or {})
+    markets = data.pop("primary_markets", [])
+
+    institution, admin = register_institution(**data)
+    
+    for market_name in markets:
+        add_market(institution.id, market_name, actor_id=admin.id)
     tokens = issue_tokens(admin)
     return jsonify({
-        "organization": organization_schema.dump(org),
+        "institution": institution_schema.dump(institution),
         "user": user_schema.dump(admin),
         **tokens,
     }), 201
