@@ -122,7 +122,7 @@ class InstitutionDocument(db.Model):
     document_type = db.Column(db.String(50), nullable=False)
     file_url = db.Column(db.String(500), nullable=False)
     uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    uploaded_at = db.column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+    uploaded_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
 
     lending_institution = db.relationship("LendingInstitution", back_populates="documents")
 
