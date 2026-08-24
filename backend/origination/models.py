@@ -80,3 +80,20 @@ class CustomerDocument(db.Model):
 
     def __repr__(self):
         return f"<CustomerDocument {self.document_type} profile={self.customer_profile_id}"
+
+class LoyaltyPoints(db.Model):
+    #one to one with customer profiles
+    __tablename__ = "loyalty_points"
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_profile_id = db.Column(
+        db.Integer, db.ForeignKey("customer_profiles.id"), unique=True, nullable=False, index=True
+    )
+
+    points_balance = db.Column(db.Integer, nullable=False, default=0)
+    updated_at = db.Column(db.DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    customer_profile = db.relationship("CustomerProfile", back_populates = "loyalty_points")
+
+    def __repr__(self):
+        return f"<LoyaltyPoints profile={self.customer_profile_id} balance={self.points_balance}>"
