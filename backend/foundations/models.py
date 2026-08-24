@@ -60,7 +60,7 @@ class LendingInstitution(db.Model):
 class User(db.Model):
     #Lender staff - loan officers, managers, admins, super_admins
 
-    __tablename__ = "users"
+    __tablename__ = "user"
     __table_args__ = (
         db.CheckConstraint(f"role IN {ROLES}", name="ck_users_role_valid"),
         db.CheckConstraint(f"status IN {USER_STATUSES}", name="ck_users_status_valid"),
