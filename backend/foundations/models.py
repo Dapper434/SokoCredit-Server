@@ -96,7 +96,7 @@ class AuditLog(db.Model):
     )
     actor_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True, index=True)
 
-    entity_type = db.Column(db.String(100), nulable=False, index=True)
+    entity_type = db.Column(db.String(100), nullable=False, index=True)
     entity_id = db.Column(db.Integer, nullable=False, index=True)
     action = db.Column(db.String(100), nullable=False)
 
