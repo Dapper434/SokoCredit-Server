@@ -10,11 +10,11 @@ class InstitutionRegistrationSchema(Schema):
     registered_business_name = fields.Str(required=True, validate=validate.Length(min=2, max=200))
     registration_number = fields.Str(required=True, validate=validate.Length(min=2, max=100))
     kra_pin = fields.Str(required=True, validate=validate.Length(min=2, max=50))
-    operating_liscence_type = fields.Str(required=False, allow_none=True)
-    cbk_liscence_number = fields.Str(required=False, allow_none=True)
+    operating_license_type = fields.Str(required=False, allow_none=True)
+    cbk_license_number = fields.Str(required=False, allow_none=True)
     head_office_address = fields.Str(required=True, validate=validate.Length(min=2, max=255))
     head_office_lat = fields.Float(required=False, allow_none=True)
-    head_office_long = fields.Float(required=False, allow_none=True)
+    head_office_lng = fields.Float(required=False, allow_none=True)
 
     #page 2 - Regulatory Compliance & Operation Footprint
 

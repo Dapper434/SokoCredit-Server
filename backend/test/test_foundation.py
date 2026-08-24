@@ -40,6 +40,36 @@ def test_institution_signup_creates_institution_and_founding_admin(client):
     assert "access_token" in body
 
 
+def test_signup_accepts_onboarding_license_fields_and_admin_can_login(client):
+    r = client.post("/api/auth/institutions", json={
+        "registered_business_name": "Acme Credit Ltd",
+        "registration_number": "BRS-UI-001",
+        "kra_pin": "P051234567X",
+        "operating_license_type": "SACCO",
+        "cbk_license_number": "CBK-001",
+        "head_office_address": "Kenyatta Avenue, Nairobi",
+        "county_business_permit_number": "NBI-123",
+        "odpc_registration_number": "ODPC-1",
+        "estimated_staff_count": 6,
+        "admin_full_name": "Jane Director",
+        "admin_national_id_number": "12345678",
+        "admin_email": "jane@acme.test",
+        "admin_password": "SuperSecret123",
+        "collection_paybill_number": "123456",
+        "default_interest_rate": 15,
+        "default_penalty_rate": 5,
+        "primary_markets": ["Gikomba", "Toi Market"],
+    })
+    assert r.status_code == 201, r.get_json()
+    assert r.get_json()["institution"]["status"] == "active"
+
+    r = client.post("/api/auth/login", json={
+        "email": "jane@acme.test", "password": "SuperSecret123",
+    })
+    assert r.status_code == 200
+    assert r.get_json()["user"]["email"] == "jane@acme.test"
+
+
 def test_founding_admin_can_log_in_immediately_since_auto_approved(client):
     signup_institution(client, email="canlogin@sacco.co.ke")
     r = client.post("/api/auth/login", json={
