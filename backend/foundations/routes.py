@@ -51,6 +51,19 @@ def signup_organization():
         **tokens,
     }), 201
 
+@foundation_bp.post("/institutuions/<int:institution_id>/documents")
+@jwt_required()
+def upload_document(institution_id):
+    #attach compliance document metadata
+    actor = get_current_user()
+    body = request.get_json() or {}
+    doc = attach_document(
+        lending_institution_id=institution_id,
+        document_type=body.get("document_type"),
+        file_url=body.get("file_url"),
+        uploaded_by=actor.id,
+    )
+    return jsonify({"id":doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
 
 @foundation_bp.post("/login")
 def login():
