@@ -2,6 +2,7 @@
 
 from typing import Optional
 
+from sqlalchemy.exc import IntegrityError
 from extensions import db
 from foundations.models import LendingInstitution, InstitutionDocument, InstitutionMarket, User
 from foundations.auth import AuthError, register_user
@@ -59,18 +60,27 @@ def register_institution(
         default_penalty_rate=default_penalty_rate,
         status="pending_review",
     )
-    db.session.add(institution)
-    db.session.flush() #assign institution.id without commiting
+    try:
+        db.session.add(institution)
+        db.session.flush() #assign institution.id without commiting
 
-    admin = register_user(
-        lending_institution_id=institution.id,
-        email=admin_email,
-        password=admin_password,
-        full_name=admin_full_name,
-        role="super_admin",
-        national_id_number=admin_national_id_number,
-    )
-    db.session.commit()
+        admin = register_user(
+            lending_institution_id=institution.id,
+            email=admin_email,
+            password=admin_password,
+            full_name=admin_full_name,
+            role="super_admin",
+            national_id_number=admin_national_id_number,
+        )
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        error_msg = str(e).lower()
+        if "cbk_license_number" in error_msg:
+            raise AuthError("An institution with this CBK license number already exists.", 409)
+        if "email" in error_msg:
+            raise AuthError("A user with this email address is already registered.", 409)
+        raise AuthError("Registration failed: an account with these details already exists.", 409)
 
     log_action(
         actor_id=admin.id,
