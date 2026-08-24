@@ -5,25 +5,26 @@ from marshmallow import ValidationError
 from foundations.auth import (
     AuthError,
     register_user,
-    register_organization,
     authenticate_user,
     issue_tokens,
     get_current_user,
     role_required,
 )
 
+from foundations.institutions import register_institution, attach_document, add_market
+
 from foundations.schemas import (
-    OrganizationSignupSchema,
+    InstitutionRegistrationSchema,
     RegisterUserSchema,
     LoginSchema,
     UserSchema,
-    OrganizationSchema,
+    LendingInstitutionSchema,
 )
 
 foundation_bp = Blueprint("foundation", __name__)
 
 user_schema = UserSchema()
-organization_schema = OrganizationSchema()
+institution_schema = LendingInstitutionSchema()
 
 @foundation_bp.errorhandler(AuthError)
 def handle_auth_error(err: AuthError):
@@ -34,23 +35,35 @@ def handle_validation_error(err: ValidationError):
     return jsonify({"error": "Validation failed", "details": err.messages}), 422
 
 # onboard an organization and its admin user onto the platform
-@foundation_bp.post("/organizations")
+@foundation_bp.post("/institutions")
 def signup_organization():
-    data = OrganizationSignupSchema().load(request.get_json() or {})
-    org, admin = register_organization(
-        name=data["name"],
-        slug=data["slug"],
-        admin_email=data["admin_email"],
-        admin_password=data["admin_password"],
-        admin_full_name=data["admin_full_name"],
-    )
+    data = InstitutionRegistrationSchema().load(request.get_json() or {})
+    markets = data.pop("primary_markets", [])
+
+    institution, admin = register_institution(**data)
+    
+    for market_name in markets:
+        add_market(institution.id, market_name, actor_id=admin.id)
     tokens = issue_tokens(admin)
     return jsonify({
-        "organization": organization_schema.dump(org),
+        "institution": institution_schema.dump(institution),
         "user": user_schema.dump(admin),
         **tokens,
     }), 201
 
+@foundation_bp.post("/institutuions/<int:institution_id>/documents")
+@jwt_required()
+def upload_document(institution_id):
+    #attach compliance document metadata
+    actor = get_current_user()
+    body = request.get_json() or {}
+    doc = attach_document(
+        lending_institution_id=institution_id,
+        document_type=body.get("document_type"),
+        file_url=body.get("file_url"),
+        uploaded_by=actor.id,
+    )
+    return jsonify({"id":doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
 
 @foundation_bp.post("/login")
 def login():
@@ -68,7 +81,7 @@ def refresh():
     claims = get_jwt()
     new_access_token = create_access_token(
         identity=identity,
-        additional_claims={"organization_id": claims["organization_id"], "role": claims["role"]},
+        additional_claims={"lending_institution_id": claims["lending_institution_id"], "role": claims["role"]},
     )
     return jsonify({"access_token": new_access_token}), 200
 
@@ -87,11 +100,13 @@ def add_teammate():
     data = RegisterUserSchema().load(request.get_json() or {})
     actor = get_current_user()
     new_user = register_user(
-        organization_id=actor.organization_id,
+        lending_institution_id=actor.lending_institution_id,
         email=data["email"],
         password=data["password"],
         full_name=data["full_name"],
         role=data["role"],
+        phone_number=data.get("phone_number"),
+        national_id_number=data.get("national_id_number"),
         actor_id=actor.id,
     )
     return jsonify(user_schema.dump(new_user)), 201
