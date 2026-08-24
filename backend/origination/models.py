@@ -60,3 +60,23 @@ class CustomerProfile(db.Model):
     def __repr__(self):
         return f"<CustomerProfile {self.id} nid={self.national_id_number}"
 
+
+class CustomerDocument(db.Model):
+    #KYC document uploads
+
+    __tablename__ = "documents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_profile_id = db.Column(
+        db.Integer, db.ForeignKey("customer_profiles.id", nullable=False, index=True)
+    )
+    document_type = db.Column(db.String(50), nullable=False)
+    file_url = db.Column(db.String(500), nullable=False)
+
+    uploaded_by = db.Column(db.Integer, db.ForeignKey("users.id", nullable=False))
+    uploaded_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+
+    customer_profile = db.relationship("CustomerProfile", back_populates="documents")
+
+    def __repr__(self):
+        return f"<CustomerDocument {self.document_type} profile={self.customer_profile_id}"
