@@ -12,7 +12,7 @@ def log_action(
     action: str,# "create, update, delete, etc"
     before:Optional[dict[str, Any]] = None,#snapshot before the action was performed
     after:Optional[dict[str, Any]] = None,#snapshot after the action was performed
-    organization_id: Optional[int] = None,# the organization the action was performed under, if not provided, will be inferred from the actor_id
+    lending_institution_id: Optional[int] = None,# the organization the action was performed under, if not provided, will be inferred from the actor_id
 
 ) -> AuditLog:
     
@@ -24,11 +24,11 @@ def log_action(
 
     # if organization_id is not provided, infer it from the actor_id
 
-    if organization_id is None:
+    if lending_institution_id is None:
 
         # if actor_id is also None, raise an error since we cannot infer the organization
         if actor_id is None:
-            raise ValueError("organization_id must be provided if actor_id is None")
+            raise ValueError("lending_institution_id must be provided if actor_id is None")
 
         # fetch the actor from the database using the actor_id
         actor = db.session.get(User, actor_id)
@@ -37,11 +37,11 @@ def log_action(
         if actor is None:
             raise ValueError(f"No such user for actor_id: {actor_id}")
         
-        organization_id = actor.organization_id
+        lending_institution_id = actor.lending_institution_id
 
     # create the audit log entry
     entry = AuditLog(
-        organization_id=organization_id,
+        lending_institution_id=lending_institution_id,
         actor_id=actor_id,
         entity_type=entity_type,
         entity_id=entity_id,

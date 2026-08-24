@@ -79,11 +79,11 @@ def register_institution(
         action="create",
         before=None,
         after={"registration_number": registration_number, "status":"pending_review"},
-        lending_institution=institution.id,
+        lending_institution_id=institution.id,
     )
 
     #auto approve for now
-    approve_institution(institution.id,actor=None)
+    approve_institution(institution.id,actor_id=None)
 
     db.session.refresh(institution)
     db.session.refresh(admin)
@@ -205,8 +205,8 @@ def approve_institution(
         entity_id=institution.id,
         action="update",
         before={"status": before_status},
-        after={"status": institution.status},
-        lending_institution=institution.id,
+        after={"status": "active"},
+        lending_institution_id=institution.id,
     )
     return institution
 

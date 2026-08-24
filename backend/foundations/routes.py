@@ -35,7 +35,7 @@ def handle_validation_error(err: ValidationError):
     return jsonify({"error": "Validation failed", "details": err.messages}), 422
 
 # onboard an organization and its admin user onto the platform
-@foundation_bp.post("/organizations")
+@foundation_bp.post("/institutions")
 def signup_organization():
     data = InstitutionRegistrationSchema().load(request.get_json() or {})
     markets = data.pop("primary_markets", [])

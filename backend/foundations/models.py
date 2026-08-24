@@ -29,23 +29,23 @@ class LendingInstitution(db.Model):
    registration_number = db.Column(db.String(100), unique=True, nullable=False)
    #BRS reg / cert no
    kra_pin = db.Column(db.String(50), unique=True, nullable=False)
-   operating_liscence_type = db.Column(db.String(100), nullable=False)
-   cbk_liscence_number = db.Column(db.String(100), unique=True, nullable=False)
+   operating_license_type = db.Column(db.String(100), nullable=True)
+   cbk_license_number = db.Column(db.String(100), unique=True, nullable=True)
    head_office_address = db.Column(db.String(255), nullable=False)
    head_office_lat = db.Column(db.Numeric(9,6), nullable=True)
-   head_office_long = db.Column(db.Numeric(9,6), nullable=True)
+   head_office_lng = db.Column(db.Numeric(9,6), nullable=True)
 
    #Regulatory compliance & operation footprint -> page 2
-   county_business_permit_number = db.Column(db.String(255), unique=True, nullable=False)
+   county_business_permit_number = db.Column(db.String(255), nullable=True)
    odpc_registration_number = db.Column(db.String(100), nullable=True)
    estimated_staff_count = db.Column(db.Integer, nullable=True)
 
    #operational settlement -> page 3
-   bank_name = db.Column(db.String(255), nullable=False)
-   bank_account_number = db.Column(db.String(100), unique=True, nullable=False)
-   collection_paybill_number = db.Column(db.String(20), nullable=False)
-   default_interest_rate = db.Column(db.Numeric(6,4), nullable=False)
-   default_penalty_rate = db.Column(db.Numeric(6,4), nullable=False)
+   bank_name = db.Column(db.String(255), nullable=True)
+   bank_account_number = db.Column(db.String(100), nullable=True)
+   collection_paybill_number = db.Column(db.String(20), nullable=True)
+   default_interest_rate = db.Column(db.Numeric(6,4), nullable=True)
+   default_penalty_rate = db.Column(db.Numeric(6,4), nullable=True)
    status = db.Column(db.String(20), nullable=False, default="pending_review")
    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
 
