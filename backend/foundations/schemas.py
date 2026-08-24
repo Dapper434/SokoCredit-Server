@@ -33,7 +33,7 @@ class InstitutionRegistrationSchema(Schema):
 
     bank_name = fields.Str(required=False, allow_none=True)
     bank_account_number = fields.Str(required=False, allow_none=True)
-    collection_paybill_number = fields.Str(required=True, validate=validate.Length(min=2, max=20)) 
+    collection_paybill_number = fields.Str(required=False, validate=validate.Length(min=2, max=20)) 
     default_interest_rate = fields.Float(required=False, allow_none=True)
     default_penalty_rate = fields.Float(required=False, allow_none=True)
 

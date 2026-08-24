@@ -63,7 +63,7 @@ def register_user(
 
     user = User(
         lending_institution_id=lending_institution_id,
-        email=email.lower.strip(),
+        email=email.lower().strip(),
         phone_number=phone_number,
         national_id_number=national_id_number,
         password_hash=hash_password(password),
@@ -93,7 +93,7 @@ def register_user(
 #authenticate user and update last_login_at
 def authenticate_user(email: str, password: str) -> User:
     user = User.query.filter_by(email=email.lower().strip()).first()
-    if user is None or not user.status != "active" or not verify_password(password, user.password_hash):
+    if user is None or user.status != "active" or not verify_password(password, user.password_hash):
         # Deliberately identical error for "no such user" and "wrong password"
         # so login responses can't be used to enumerate registered emails.
         raise AuthError("Invalid email or password.", 401)
