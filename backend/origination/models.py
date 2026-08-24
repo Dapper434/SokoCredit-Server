@@ -110,3 +110,24 @@ class Badge(db.Model):
 
     def __repr__(self):
         return f"<Badge {self.title}>"
+
+class CustomerBadge(db.Model):
+    #join table for customers and badges
+
+    __tablename__ = "customer_badges"
+    __table_args__ = (
+        db.UniqueConstraint("customer_profile_id", "badge_id", name="uq_customer_badge_once"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_profile_id = db.Column(
+        db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False, index=True
+    )
+    badge_id = db.Column(db.Integer, db.ForeignKey("badges.id"), nullable=False, index=True)
+    earned_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+    customer_profile = db.relationship("CustomerProfile", back_populates="badges")
+
+    badge = db.relationship("Badge")
+
+    def __repr__(self):
+        return f"<CustomerBadge profile={self.customer_profile_id} badge={self.badge_id}>"
