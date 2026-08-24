@@ -9,7 +9,7 @@ from foundations.audit import log_action
 
 MAX_MARKETS_PER_INSTITUTION = 6
 
-def register_instistution(
+def register_institution(
     registered_business_name: str,
     registration_number: str,
     kra_pin: str,
