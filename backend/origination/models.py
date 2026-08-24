@@ -21,7 +21,7 @@ class MarketStall(db.Model):
     lng = db.Column(db.Numeric(9,6), nullable=True)
 
     def __repr__(self):
-        return f"<MarketStall {self.market_name} # {self.stall_number} "
+        return f"<MarketStall {self.market_name} # {self.stall_number}>"
 
 
 class CustomerProfile(db.Model):
@@ -58,7 +58,7 @@ class CustomerProfile(db.Model):
     badges = db.relationship("CustomerBadge", back_populates="customer_profiles", lazy="dynamic")
 
     def __repr__(self):
-        return f"<CustomerProfile {self.id} nid={self.national_id_number}"
+        return f"<CustomerProfile {self.id} nid={self.national_id_number}>"
 
 
 class CustomerDocument(db.Model):
@@ -79,7 +79,7 @@ class CustomerDocument(db.Model):
     customer_profile = db.relationship("CustomerProfile", back_populates="documents")
 
     def __repr__(self):
-        return f"<CustomerDocument {self.document_type} profile={self.customer_profile_id}"
+        return f"<CustomerDocument {self.document_type} profile={self.customer_profile_id}>"
 
 class LoyaltyPoints(db.Model):
     #one to one with customer profiles
@@ -97,3 +97,16 @@ class LoyaltyPoints(db.Model):
 
     def __repr__(self):
         return f"<LoyaltyPoints profile={self.customer_profile_id} balance={self.points_balance}>"
+
+class Badge(db.Model):
+    #a badge definition
+
+    __tablename__ = "badges"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+    icon = db.Column(db.String(255), nullable=True)
+
+    def __repr__(self):
+        return f"<Badge {self.title}>"
