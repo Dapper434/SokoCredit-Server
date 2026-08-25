@@ -66,3 +66,27 @@ class Loan(db.Model):
 
     def __repr__ (self):
         return f"<Loan {self.id} customer={self.customer_profile_id} status={self.status}>"
+
+
+class LoanApproval(db.Model):
+    __tablename__ = "loan_approvals"
+    __table_args__ = (
+        db.CheckConstraint(f"decision IN {APPROVAL_DECISIONS}", name="ck_loan_approvals_decision_valid"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    loan_id = db.Column(db.Integer, db.ForeignKey("loans.id"), nullable=False, index=True)
+    maker_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    checker_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    maker_notes = db.Column(db.Text, nullable=True)
+    checker_notes = db.Column(db.Text, nullable=True)
+
+    decision = db.Column(db.String(20), nullable=False, default="pending")
+    maker_action_at = db.Column(db.DateTime(timezone=True),default=utcnow, nullable=False)
+    checker_action_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    loan = db.relationship("Loan", back_populates="approvals")
+
+    def __repr__(self):
+        return f"<LoanApproval loan={self.loan_id} decision={self.decision}>"
