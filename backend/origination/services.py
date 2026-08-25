@@ -120,3 +120,34 @@ def add_document(
         lending_institution_id=institution_id,
     )
     return doc
+
+
+def award_badge(
+    customer_profile_id: int,
+    badge_id: int,
+    actor_id: int
+) -> CustomerBadge:
+    profile = get_customer_profile(customer_profile_id)
+
+    if db.session.get(Badge, badge_id) is None:
+        raise AuthError("No such badge.", 404)
+
+    if CustomerBadge.query.filter_by(customer_profile_id=profile.id, badge_id=badge_id).first():
+        raise AuthError("this customer already has that badge.", 409)
+
+    award = CustomerBadge(customer_profile_id=profile.id, badge_id=badge_id)
+    
+    db.session.add(award)
+    db.session.commit()
+
+    institution_id = get_user_intitution_id(profile.user_id)
+    log_action (
+        actor_id=actor_id,
+        entity_type="CustomerBadge",
+        entity_id=award.id,
+        action="create",
+        before=None,
+        after={"customer_profile_id": profile.id, "badge_id": badge_id},
+        lending_institution_id=institution_id,
+    )
+    return award
