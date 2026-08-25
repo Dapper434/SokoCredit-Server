@@ -80,3 +80,11 @@ def create_customer_profile(
         lending_institution_id=institution_id,
     )
     return profile
+
+
+def get_customer_profile(customer_profile_id: int) -> CustomerProfile:
+    profile = db.session.get(CustomerProfile, customer_profile_id)
+    if profile is None:
+        raise AuthError("No such customer profile.", 404)
+    _verify_profile_institution_access(profile)
+    return profile
