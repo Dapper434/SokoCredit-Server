@@ -30,3 +30,39 @@ class SavingsAccount(db.Model):
 
     def __repr__(self):
         return f"<SavingsAccount customer={self.customer_profile_id} mature={self.is_savings_mature}>"
+
+
+class Loan(db.Model):
+    __tablename__ = "loans"
+    __table_args__ = (
+        db.CheckConstraint(f"status IN {LOAN_STATUSES}", name="ck_loans_status_valid"),
+        db.CheckConstraint(
+            f"repayment_frequency IN {REPAYMENT_FREQUENCIES}", name="ck_loans_repayment_frequency_valid"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    lending_institution_id = db.Column(
+        db.Integer, db.ForeignKey("lending_institutions.id"), nullable=False, index=True
+    )
+    customer_profile_id = db.Column(
+        db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False, index=True
+    )
+
+    principal = db.Column(db.Numeric(14, 2), nullable=False)
+    interest_rate = db.Column(db.Numeric(6, 4), nullable=False)
+    term_days = db.Column(db.Integer, nullable=False)
+    repayment_frequency = db.Column(db.String(20), nullable=False)
+    loan_purpose = db.Column(db.String(255), nullable=True)
+
+    status = db.Column(db.String(20), nullable=False, default="pending")
+
+    disbursed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    maturity_date = db.Column(db.Date, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+
+    approvals = db.relationship("LoanApproval", back_populates="loan", lazy="dynamic")
+
+    def __repr__ (self):
+        return f"<Loan {self.id} customer={self.customer_profile_id} status={self.status}>"
