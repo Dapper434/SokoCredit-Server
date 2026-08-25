@@ -17,12 +17,16 @@ profile_schema = CustomerProfileSchema()
 
 @origination_bp.errorhandler(AuthError)
 def handle_auth_error(err:AuthError):
-    return jsonify({"error":err.message}, err.status_code)
+    response = jsonify({"error": err.message})
+    response.status_code = err.status_code
+    return response
 
 
 @origination_bp.errorhandler(ValidationError)
 def handle_validation_error(err: ValidationError):
-    return jsonify({"error": "Validation failed", "details": err.messages}), 422
+    response = jsonify({"error": "Validation failed", "details": err.messages})
+    response.status_code = 422
+    return response
 
 
 @origination_bp.post("/customers")
@@ -53,3 +57,10 @@ def upload_document(customer_id):
     )
     return jsonify({"id": doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
 
+@origination_bp.post("/customers/<int:customer_id>/badges")
+@jwt_required()
+def add_badge(customer_id):
+    data = BadgeAwardSchema().load(request.get_json() or {})
+    actor = get_current_user()
+    award = award_badge(customer_id, data["badge_id"], actor_id=actor.id)
+    return jsonify({"id": award.id, "customer_profile_id": award.customer_profile_id, "badge_id": award.badge_id}), 201
