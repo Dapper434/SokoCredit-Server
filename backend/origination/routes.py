@@ -24,6 +24,7 @@ def handle_auth_error(err:AuthError):
 def handle_validation_error(err: ValidationError):
     return jsonify({"error": "Validation failed", "details": err.messages}), 422
 
+
 @origination_bp.post("/customers")
 @jwt_required
 def create_customer():
@@ -31,3 +32,10 @@ def create_customer():
     actor = get_current_user()
     profile = create_customer_profile(actor_id=actor.id, **data)
     return jsonify(profile_schema.dump(profile)), 201
+
+
+@origination_bp.get("/customers/<int:customer_id>")
+@jwt_required()
+def get_customer(customer_id):
+    profile = get_customer_profile(customer_id)
+    return jsonify(profile_schema.dump(profile)), 200
