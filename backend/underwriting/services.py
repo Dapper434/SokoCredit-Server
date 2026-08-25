@@ -251,4 +251,47 @@ def _get_total_outstanding_balance(
     return sum(
      (loan.principal for loan in active_loans), Decimal("0")
     )
-    
+
+#Credit-tiering
+
+def recalculate_credit_score(
+    customer_profile_id: int,
+    new_tier: str,
+    score_components: Optional[dict[str, Any]] = None,
+    actor_id: Optional[int] = None,    
+) -> CreditScoreLog:
+    #rule based logic that decides a new tier based on score components
+
+    if new_tier not in CREDIT_TIERS:
+        raise ValueError(f"Invalid tier: {new_tier} must be one of {CREDIT_TIERS}.")
+
+    latest = (
+        CreditScoreLog.query.filter_by(customer_profile_id=customer_profile_id)
+        .order_by(CreditScoreLog.calculated_at.desc())
+        .first()
+    )
+
+    previous_tier = latest.new_tier if latest else None
+
+    entry = CreditScoreLog(
+        customer_profile_id=customer_profile_id,
+        previous_tier=previous_tier,
+        new_tier=new_tier,
+        score_components=score_components,
+    )
+    db.session.add(entry)
+    db.session.commit()
+
+    set_credit_tier(customer_profile_id=customer_profile_id, tier=new_tier)
+
+    if actor_id is not None:
+        log_action(
+            actor_id=actor_id,
+            entity_type="CreditScoreLog",
+            entity_id=entry.id,
+            action="create",
+            before={"tier": previous_tier},
+            after={"tier": new_tier},
+        )
+
+    return entry
