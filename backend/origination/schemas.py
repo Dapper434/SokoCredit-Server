@@ -13,3 +13,15 @@ class CustomerProfileCreateSchema(Schema):
     next_of_kin_name = fields.Str(required=False, allow_none=True)
     next_of_kin_phone = fields.Str(required=False, allow_none=True)
     market_stall_id = fields.Int(required=False, allow_none=True)
+
+class DocumentUploadSchema(Schema):
+    #POST/api/origination/customers/<id>/documents
+
+    document_type = fields.Str(
+        required=True,
+        validate=validate.OneOf(
+            ["national_id", "business_permit", "mpesa_statement", "profile_photo"]
+        ),
+    )
+    file_url = fields.Str(required=True)
+
