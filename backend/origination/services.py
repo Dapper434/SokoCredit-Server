@@ -16,12 +16,12 @@ from origination.models import (
     CREDIT_TIERS,
 )
 
-from foundations.auth import AuthError, get_user_intitution_id, verify_institution_access
+from foundations.auth import AuthError, get_user_institution_id, verify_institution_access
 from foundations.audit import log_action
 
 def _verify_profile_institution_access(profile: CustomerProfile) -> None:
 
-    institution_id  = get_user_intitution_id(profile.user_id)
+    institution_id  = get_user_institution_id(profile.user_id)
     if institution_id is None:
         raise AuthError("This customer profile has no resolvable institution", 403)
 
@@ -43,7 +43,7 @@ def create_customer_profile(
 ) -> CustomerProfile:
     #creates customer profile owned bu user_id(loan officer)
 
-    institution_id = get_user_intitution_id(user_id)
+    institution_id = get_user_institution_id(user_id)
     if institution_id is None:
         raise AuthError("No such staff user, or user has no institution.", 400)
 
@@ -136,7 +136,7 @@ def award_badge(
         raise AuthError("this customer already has that badge.", 409)
 
     award = CustomerBadge(customer_profile_id=profile.id, badge_id=badge_id)
-    
+
     db.session.add(award)
     db.session.commit()
 
@@ -151,3 +151,33 @@ def award_badge(
         lending_institution_id=institution_id,
     )
     return award
+
+def set_credit_tier(
+    customer_profile_id:int,
+    tier:str,
+    actor_id:Optional[int]=None     
+) -> CustomerProfile:
+    #called by underwriting afte revery credit score recalculation
+
+    if tier not in CREDIT_TIERS:
+        raise AuthError(f"Invalid credit tier '{tier}'. Must be one of {CREDIT_TIERS}. ", 400)
+
+    profile = db.session.get(CustomerProfile, customer_profile_id)
+    if profile is None:
+        raise AuthError("No such cutomer profile.", 404)
+
+    institution_id = get_user_institution_id(profile.user_id)
+    before_tier = profile.credit_tier
+    profile.credit_tier = tier
+    db.session.commit()
+
+    log_action(
+        actor_id=actor_id,
+        entity_type="CustomerProfile",
+        entity_id=profile.id,
+        action="update",
+        before={"credit_tier": before_tier},
+        after={"credit_tier": tier},
+        lending_institution_id=institution_id,
+    )
+    return profile
