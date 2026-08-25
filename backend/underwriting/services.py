@@ -185,3 +185,21 @@ def reject_loan(
     )
  
     return loan
+
+def disburse_loan(
+    loan_id: int,
+    actor_id:int
+) -> Loan:
+    #Underwriting calls into Servicing to move the money
+    #writes into disbursed_at and flips status to active
+    #depends on Servicing module so is a stub as for now
+
+    loan = _get_loan_or_404(loan_id)
+    approval = _get_latest_approval(loan)
+    if approval is None or approval.desicion != "approved":
+        raise ValueError("Loan must be approved before disbursment")
+
+    raise NotImplementedError(
+        "Servicing module not built yet."
+    )
+
