@@ -29,5 +29,18 @@ class BadgeAwardSchema(Schema):
     #POST/api/origination/customers/<id>/badges
     badge_id = fields.Int(required=True)
 
-
+class CustomerProfileSchema(Schema):
+    id = fields.Int(dump_only=True)
+    user_id = fields.Int(dump_only=True)
+    national_id_number = fields.Str(dump_only=True)
+    date_of_birth = fields.Date(dump_only=True, allow_none=True)
+    gender = fields.Str(dump_only=True, allow_none=True)
+    business_type = fields.Str(dump_only=True, allow_none=True)
+    monthly_income_range = fields.Str(dump_only=True, allow_none=True)
+    residential_address = fields.Str(dump_only=True, allow_none=True)
+    next_of_kin_name = fields.Str(dump_only=True, allow_none=True)
+    next_of_kin_phone = fields.Str(dump_only=True, allow_none=True)
+    market_stall_id = fields.Int(dump_only=True, allow_none=True)
+    credit_tier = fields.Str(dump_only=True, allow_none=True)
+    created_at = fields.DateTime(dump_only=True)
 
