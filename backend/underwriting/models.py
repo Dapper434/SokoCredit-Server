@@ -90,3 +90,24 @@ class LoanApproval(db.Model):
 
     def __repr__(self):
         return f"<LoanApproval loan={self.loan_id} decision={self.decision}>"
+
+
+class CreditScoreLog(db.Model):
+    #one row per tier recalculation
+    #underwriting writes here after every recalculation
+    #pushes the new tier to Origination
+
+    __tablename__ = "credit_score_log"
+
+    id = db.Column(db.integer, primary_key=True)
+    customer_profile_id = db.Column(
+        db.Integer, db.ForeignKey("customer_profile.id"), nullable=False,index=True
+    )
+
+    previous_tier = db.Column(db.String(10), nullable=True)
+    new_tier = db.Column(db.String(10), nullable=False)
+    score_components = db.Column(db.JSON, nullable=True)
+    calculated_at = db.Column(db.DateTime(timezone=True), default=utcnow,nullable=False)
+
+    def __repr__(self):
+        return f"<CreditScoreLog customer={self.customer_profile_id} tier={self.new_tier}>"
