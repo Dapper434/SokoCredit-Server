@@ -116,3 +116,39 @@ def propose_loan(
     )
 
     return loan
+
+def approve_loan(
+    loan_id: int,
+    checker_id: int,
+    notes: Optional[str]= None
+) -> Loan:
+    #only manager/admin/superadmin can approve loan
+    #only approves loan and passes decision to Servicing.disburse_loan
+
+    loan = _get_loan_or_404(loan_id)
+    approval = _get_latest_approval(loan)
+    if approval is None or approval.decision != "pending":
+        raise ValueError("Loan has no pending approval to act on")
+
+    _require_role(checker_id, ("manager", "admin", "super_admin"))
+    if checker_id == approval.maker_id:
+        raise PermissionError("the checker cannot be the same as the maker of the loan")
+
+    before = {"decision": approval.decision}
+    approval.checker_id = checker_id
+    approval.checker_notes = notes
+    approval.decision = "approved"
+    approval.checker_action_at = utcnow()
+    db.session.commit()
+ 
+    log_action(
+        actor_id=checker_id,
+        entity_type="LoanApproval",
+        entity_id=approval.id,
+        action="update",
+        before=before,
+        after={"decision": "approved"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+ 
+    return loan
