@@ -28,7 +28,7 @@ def handle_validation_error(err: ValidationError):
 @origination_bp.post("/customers")
 @jwt_required()
 def create_customer():
-    data = CustomerProfileSchema().load(request.get_json() or {})
+    data = CustomerProfileCreateSchema().load(request.get_json() or {})
     actor = get_current_user()
     profile = create_customer_profile(actor_id=actor.id, **data)
     return jsonify(profile_schema.dump(profile)), 201
