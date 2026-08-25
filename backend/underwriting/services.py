@@ -12,6 +12,7 @@ from underwriting.models import (
     LoanApproval,
     CreditScoreLog,
     CREDIT_TIERS,
+    SavingsAccount,
     utcnow
 )
 
@@ -203,3 +204,51 @@ def disburse_loan(
         "Servicing module not built yet."
     )
 
+def get_available_credit(
+    customer_profile_id:int
+) -> Decimal:
+    #derived never stored
+    #is_savings_mature must be true or new customers get 0
+    #managers can disburse exceptional first loans
+    #FORMULA - (tier_multiplier * total_savings) - sum(outstanding_balance)
+
+    savings_account = SavingsAccount.query.filter_by(
+        customer_profile_id=customer_profile_id
+    ).first()
+
+    if savings_account is None or not savings_account.is_savings_mature:
+        return Decimal("0")
+
+    latest_score = (
+        CreditScoreLog.query.filter_by(customer_profile_id=customer_profile_id)
+        .order_by(CreditScoreLog.calculated_at.desc())
+        .first()
+    )
+
+    if latest_score is None:
+        return Decimal("0")
+
+    multiplier = TIER_MULTIPLIERS.get(latest_score.new_tier, Decimal("0"))
+    gross_limit = multiplier * savings_account.total_savings_balance
+
+    outstanding = _get_total_outstanding_balance(customer_profile_id)
+ 
+    available = gross_limit - outstanding
+    return available if available > 0 else Decimal("0")
+
+def _get_total_outstanding_balance(
+    customer_profile_id: int
+) -> Decimal:
+    #stub for now
+    #calls servicing.services_get_outstanding_balance per active loan
+    #sums the results to grow customer's available credit limit
+
+    active_loans = Loan.query.filer_by(
+        customer_profile_id=customer_profile_id,
+        status="active"
+    ).all()
+
+    return sum(
+     (loan.principal for loan in active_loans), Decimal("0")
+    )
+    
