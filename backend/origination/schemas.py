@@ -25,3 +25,9 @@ class DocumentUploadSchema(Schema):
     )
     file_url = fields.Str(required=True)
 
+class BadgeAwardSchema(Schema):
+    #POST/api/origination/customers/<id>/badges
+    badge_id = fields.Int(required=True)
+
+
+
