@@ -27,9 +27,13 @@ def create_app(config_name : str = None) -> Flask:
 
     """import models here to avoid circular imports, and to ensure they are registered with SQLAlchemy"""
     from foundations import models as foundation_models
+    from origination import models as origination_models
 
     from foundations.routes import foundation_bp
     app.register_blueprint(foundation_bp, url_prefix="/api/auth")
+
+    from origination.routes import origination_bp
+    app.register_blueprint(origination_bp, url_prefix="/api/origination")
 
     from foundations.auth import register_jwt_callbacks
     register_jwt_callbacks(jwt)
