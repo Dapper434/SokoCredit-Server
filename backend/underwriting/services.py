@@ -59,3 +59,60 @@ def _get_latest_approval(
         .first()
     )
 
+#Maker-Checker Workflow
+#loan_officer creates loan manager/admin aproves loan
+
+def propose_loan(
+    actor_id: int,
+    customer_profile_id: int,
+    lending_institution_id: int,
+    principal: Decimal,
+    interest_rate: Decimal,
+    term_days: int,
+    repayment_frequency: str,
+    loan_purpose: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> Loan:
+    #loan_officer proposes a loan with initial status="pending" & decision="pending"
+
+    _require_role(actor_id, ("loan_officer",))
+
+    loan = Loan(
+        lending_institution_id=lending_institution_id,
+        customer_profile_id=customer_profile_id,
+        principal=principal,
+        interest_rate=interest_rate,
+        term_days=term_days,
+        repayment_frequency=repayment_frequency,
+        loan_purpose=loan_purpose,
+        status="pending",
+    )
+    db.session.add(loan)
+    db.session.flush() #assigns loan.id without commiting to allow approval to reference it
+
+    approval = LoanApproval(
+        loan_id=loan.id,
+        maker_id=actor_id,
+        maker_notes=notes,
+        decision="pending",
+    )
+
+    db.session.add(approval)
+    db.session.commit()
+
+    #log proposed loan action
+    log_action(
+        actor_id=actor_id,
+        entity_type="Loan",
+        entity_id=loan.id,
+        action="create",
+        before=None,
+        after={
+            "customer_profile_id": customer_profile_id,
+            "principal": str(principal),
+            "status": loan.status,
+        },
+        lending_institution_id=lending_institution_id,
+    )
+
+    return loan
