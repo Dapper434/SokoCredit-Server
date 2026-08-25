@@ -27,6 +27,7 @@ def _verify_profile_institution_access(profile: CustomerProfile) -> None:
 
     verify_institution_access(institution_id)
 
+
 def create_customer_profile(
     user_id: int,
     national_id_number: str,
@@ -88,3 +89,34 @@ def get_customer_profile(customer_profile_id: int) -> CustomerProfile:
         raise AuthError("No such customer profile.", 404)
     _verify_profile_institution_access(profile)
     return profile
+
+
+def add_document(
+    customer_profile_id: int,
+    document_type: str,
+    file_url: str,
+    uploaded_by: int, 
+) -> CustomerDocument:
+    profile = get_customer_profile(customer_profile_id)
+
+    doc = CustomerDocument(
+        customer_profile_id=profile.id,
+        document_type=document_type,
+        file_url=file_url,
+        uploaded_by=uploaded_by, 
+    )
+
+    db.session.add(doc)
+    db.session.commit()
+
+    institution_id = get_user_intitution_id(profile.user_id)
+    log_action(
+        actor_id=uploaded_by,
+        entity_type="CustomerDocument",
+        entity_id=doc.id,
+        action="create",
+        before=None,
+        after={"document_type": document_type, "customer_profile_id": profile.id},
+        lending_institution_id=institution_id,
+    )
+    return doc
