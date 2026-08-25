@@ -109,7 +109,7 @@ def add_document(
     db.session.add(doc)
     db.session.commit()
 
-    institution_id = get_user_intitution_id(profile.user_id)
+    institution_id = get_user_institution_id(profile.user_id)
     log_action(
         actor_id=uploaded_by,
         entity_type="CustomerDocument",
@@ -140,7 +140,7 @@ def award_badge(
     db.session.add(award)
     db.session.commit()
 
-    institution_id = get_user_intitution_id(profile.user_id)
+    institution_id = get_user_institution_id(profile.user_id)
     log_action (
         actor_id=actor_id,
         entity_type="CustomerBadge",
