@@ -19,3 +19,7 @@ profile_schema = CustomerProfileSchema()
 def handle_auth_error(err:AuthError):
     return jsonify({"error":err.message}, err.status_code)
 
+
+@origination_bp.errorhandler(ValidationError)
+def handle_validation_error(err: ValidationError):
+    return jsonify({"error": "Validation failed", "details": err.messages}), 422
