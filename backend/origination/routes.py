@@ -39,3 +39,16 @@ def create_customer():
 def get_customer(customer_id):
     profile = get_customer_profile(customer_id)
     return jsonify(profile_schema.dump(profile)), 200
+
+@origination_bp.post("/customers/<int:customer_id>/documents")
+@jwt_required()
+def upload_document(customer_id):
+    data = DocumentUploadSchema().load(request.get_json() or {})
+    actor = get_current_user()
+    doc = add_document(
+        customer_profile_id=customer_id,
+        document_type=data["document_type"],
+        file_url=data["file_url"],
+        uploaded_by=actor.id,
+    )
+    return jsonify({"id": doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
