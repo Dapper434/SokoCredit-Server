@@ -185,3 +185,9 @@ def verify_institution_access(resource_lending_institution_id: int) -> None:
     claims = get_jwt()
     if claims.get("lending_institution_id") != resource_lending_institution_id:
         raise AuthError("This resource does not belong to your organization.", 403)
+
+def get_user_institution_id(user_id:int) -> Optional[int]:
+    #lets other modules resolve which institution a staff belongs to
+    #without importing foundations.models.User directly
+    user = db.session.get(User, user_id)
+    return user.lending_institution_id if user else None
