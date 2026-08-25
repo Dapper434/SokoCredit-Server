@@ -26,7 +26,7 @@ def handle_validation_error(err: ValidationError):
 
 
 @origination_bp.post("/customers")
-@jwt_required
+@jwt_required()
 def create_customer():
     data = CustomerProfileSchema().load(request.get_json() or {})
     actor = get_current_user()
@@ -53,10 +53,3 @@ def upload_document(customer_id):
     )
     return jsonify({"id": doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
 
-@origination_bp.post("/customers/<int:customer_id>/badges")
-@jwt_required()
-def add_badge(customer_id):
-    data = BadgeAwardSchema().load(request.get_json() or {})
-    actor = get_current_user()
-    award = award_badge(customer_id, data["badge_id"], actor_id=actor.id)
-    return jsonify({"id": award.id, "customer_profile_id": award.customer_profile_id, "badge_id": award.badge_id}), 201
