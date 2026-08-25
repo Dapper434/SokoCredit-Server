@@ -17,8 +17,8 @@ class MarketStall(db.Model):
     market_name = db.Column(db.String(150), nullable=False)
     stall_number = db.Column(db.String(50), nullable=True)
     county = db.Column(db.String(100), nullable=True)
-    lat = db.Column(db.Numeric(9,6), nullable=True)
-    lng = db.Column(db.Numeric(9,6), nullable=True)
+    lat = db.Column(db.Numeric(9, 6), nullable=True)
+    lng = db.Column(db.Numeric(9, 6), nullable=True)
 
     def __repr__(self):
         return f"<MarketStall {self.market_name} # {self.stall_number}>"
@@ -32,7 +32,7 @@ class CustomerProfile(db.Model):
         db.CheckConstraint(
             f"credit_tier is NULL OR credit_tier IN {CREDIT_TIERS}", 
             name="ck_customer_credit_tier_valid"
-        )
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -55,7 +55,7 @@ class CustomerProfile(db.Model):
 
     documents = db.relationship("CustomerDocument", back_populates="customer_profile", lazy="dynamic")
     loyalty_points = db.relationship("LoyaltyPoints", back_populates="customer_profile", uselist=False)
-    badges = db.relationship("CustomerBadge", back_populates="customer_profiles", lazy="dynamic")
+    badges = db.relationship("CustomerBadge", back_populates="customer_profile", lazy="dynamic")
 
     def __repr__(self):
         return f"<CustomerProfile {self.id} nid={self.national_id_number}>"
@@ -68,12 +68,12 @@ class CustomerDocument(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     customer_profile_id = db.Column(
-        db.Integer, db.ForeignKey("customer_profiles.id", nullable=False, index=True)
+        db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False, index=True
     )
     document_type = db.Column(db.String(50), nullable=False)
     file_url = db.Column(db.String(500), nullable=False)
 
-    uploaded_by = db.Column(db.Integer, db.ForeignKey("users.id", nullable=False))
+    uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     uploaded_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
 
     customer_profile = db.relationship("CustomerProfile", back_populates="documents")
