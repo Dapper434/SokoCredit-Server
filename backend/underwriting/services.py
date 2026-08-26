@@ -128,7 +128,7 @@ def approve_loan(
         raise AuthError("Loan has no pending approval to act on", 400)
 
     if checker_id == approval.maker_id:
-        raise AuthError("the checker cannot be the same as the maker of the loan")
+        raise AuthError("the checker cannot be the same as the maker of the loan", 403)
 
     before = {"decision": approval.decision}
     approval.checker_id = checker_id
@@ -154,14 +154,13 @@ def reject_loan(
     checker_id:int,
     notes:Optional[str] = None
 ) -> Loan:
-    loan = _get_loan_or_404(loan_id)
+    loan = get_loan(loan_id)
     approval = _get_latest_approval(loan)
     if approval is None or approval.decision != "pending":
-        raise ValueError("Loan has no pending approval to act on")
+        raise AuthError("Loan has no pending approval to act on", 400)
 
-    _require_role(checker_id, ("manager", "admin", "super_admin"))
     if checker_id == approval.maker_id:
-        raise PermissionError("the checker cannot be the same as the maker of the loan")
+        raise AuthError("the checker cannot be the same as the maker of the loan", 403)
 
     before = {"decision": approval.decision}
     approval.checker_id = checker_id
