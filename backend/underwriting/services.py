@@ -45,6 +45,14 @@ def get_loan(
     verify_institution_access(loan.lending_institution_id)
     return loan
 
+def list_loan_approvals(
+    loan_id: int
+) -> list[LoanApproval]:
+    loan = get_loan(loan_id)
+    return (
+       LoanApproval.query.filter_by(loan_id=loan.id).order_by(LoanApproval.maker_action_at.desc().all())
+    )
+
 #Maker-Checker Workflow
 #loan_officer creates loan manager/admin aproves loan
 
