@@ -34,6 +34,17 @@ def _get_latest_approval(
         .first()
     )
 
+#Reads
+
+def get_loan(
+    loan_id:int
+) -> Loan:
+    loan = db.session.get(Loan, loan_id)
+    if loan is None:
+        raise AuthError("No such loan.", 404)
+    verify_institution_access(loan.lending_institution_id)
+    return loan
+
 #Maker-Checker Workflow
 #loan_officer creates loan manager/admin aproves loan
 
