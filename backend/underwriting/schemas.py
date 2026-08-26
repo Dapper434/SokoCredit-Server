@@ -71,3 +71,13 @@ class CreditScoreRecalculateSchema(Schema):
 class AvailableCreditSchema(Schema):
     customer_profile_id = fields.Int(dump_only=True)
     available_credit = fields.Decimal(as_string=True, dump_only=True)
+
+#savings account
+
+class SavingsAccountSchema(Schema):
+    id = fields.Int(dump_only=True)
+    customer_profile_id = fields.Int(dump_only=True)
+    total_savings_balance = fields.Decimal(as_string=True, dump_only=True)
+    days_saved_count = fields.Int(dump_only=True)
+    savings_start_date = fields.Date(dump_only=True, allow_none=True)
+    is_savings_mature = fields.Bool(dump_only=True)
