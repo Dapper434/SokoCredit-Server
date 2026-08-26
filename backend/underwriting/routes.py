@@ -59,3 +59,13 @@ def create_loan_proposal():
         return _auth_error_response(exc)
 
     return jsonify(loan_schema.dump(loan)), 201
+
+@underwriting_bp.route("/loans/<int:loan_id", methods=["GET"])
+@jwt_required()
+def get_loan_route(loan_id):
+    try:
+        loan = fetch_loan(loan_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
+    return jsonify(loan_schema.dump(loan)), 200
