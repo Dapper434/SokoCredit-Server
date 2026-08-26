@@ -106,3 +106,17 @@ def reject_loan_route(loan_id):
         return _auth_error_response(exc)
 
     return jsonify(loan_schema.dump(loan)), 200
+
+@underwriting_bp.route("/loans/<int:loan_id>/disburse", methods=["POST"])
+@permission_required("loan:disburse")
+def disburse_loan_route(loan_id):
+    actor_id = _current_user_id()
+    try:
+        loan = disburse_loan(loan_id=loan_id, actor_id=actor_id)
+    except NotImplementedError as exc:
+        return jsonify({"error": str(exc)}), 501
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
+    return jsonify(loan_schema.dump(loan)), 200
+
