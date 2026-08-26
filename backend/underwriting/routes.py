@@ -120,3 +120,13 @@ def disburse_loan_route(loan_id):
 
     return jsonify(loan_schema.dump(loan)), 200
 
+@underwriting_bp.route("/customers/<int:customer_profile_id>/available-credit", methods=["GET"])
+@jwt_required()
+def get_available_credit_route(customer_profile_id):
+    try:
+        available = get_available_credit(customer_profile_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    payload = {"customer_profile_id": customer_profile_id, "available_credit": available}
+    return jsonify(available_credit_schema.dump(payload)), 200
