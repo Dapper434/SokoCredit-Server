@@ -59,7 +59,6 @@ def list_loan_approvals(
 def propose_loan(
     actor_id: int,
     customer_profile_id: int,
-    lending_institution_id: int,
     principal: Decimal,
     interest_rate: Decimal,
     term_days: int,
@@ -69,10 +68,14 @@ def propose_loan(
 ) -> Loan:
     #loan_officer proposes a loan with initial status="pending" & decision="pending"
 
-    _require_role(actor_id, ("loan_officer",))
+    institution_id = get_user_institution_id(actor_id)
+    if institution_id is None:
+        raise AuthError("No such staff user, or user has no institution.", 400)
+
+    get_customer_profile(customer_profile_id)
 
     loan = Loan(
-        lending_institution_id=lending_institution_id,
+        lending_institution_id=institution_id,
         customer_profile_id=customer_profile_id,
         principal=principal,
         interest_rate=interest_rate,
@@ -106,7 +109,7 @@ def propose_loan(
             "principal": str(principal),
             "status": loan.status,
         },
-        lending_institution_id=lending_institution_id,
+        lending_institution_id=institution_id,
     )
 
     return loan
