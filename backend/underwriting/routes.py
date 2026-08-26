@@ -38,3 +38,24 @@ available_credit_schema = AvailableCreditSchema()
 def _current_user_id()-> int:
     return int(get_jwt_identity())
 
+def _auth_error_response(exc:AuthError):
+    return jsonify({"error": exc.message}), exc.status_code
+
+@underwriting_bp.route("/loans", methods=["POST"])
+@permission_required("loan:create")
+def create_loan_proposal():
+    #granted to loan_officer, manager & admin 
+    try:
+        data = loan_proposal_schema.load(request.get_json() or {})
+    except ValidationError as err:
+        return jsonify({"errors":err.messages}), 400
+
+    actor_id = _current_user_id()
+    notes = data.pop("notes", None)
+
+    try:
+        loan = propose_loan(actor_id, **data, notes=notes)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
+    return jsonify(loan_schema.dump(loan)), 201
