@@ -37,3 +37,15 @@ class LoanProposalSchema(Schema):
     )
     loan_purpose = fields.Str(required=False, allow_none=True)
     notes = fields.Str(required=False, allow_none=True, metadata={"description": "maker's notes"})
+
+
+class LoanApprovalSchema(Schema):
+    id = fields.Int(dump_only=True)
+    loan_id = fields.Int(dump_only=True)
+    maker_id = fields.Int(dump_only=True)
+    checker_id = fields.Int(dump_only=True, allow_none=True)
+    maker_notes = fields.Str(dump_only=True, allow_none=True)
+    checker_notes = fields.Str(dump_only=True, allow_none=True)
+    decision = fields.Str(dump_only=True, validate=validate.OneOf(APPROVAL_DECISIONS))
+    maker_action_at = fields.DateTime(dump_only=True)
+    checker_action_at = fields.DateTime(dump_only=True, allow_none=True)
