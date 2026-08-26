@@ -130,3 +130,24 @@ def get_available_credit_route(customer_profile_id):
  
     payload = {"customer_profile_id": customer_profile_id, "available_credit": available}
     return jsonify(available_credit_schema.dump(payload)), 200
+
+@underwriting_bp.route("/customers/<int:customer_profile_id>/credit-score", methods=["POST"])
+@jwt_required()
+def recalculate_credit_score_route(customer_profile_id):
+    #revisited once real scoring engine exisits
+    try:
+        data = credit_score_recalculate_schema.load(request.get_json() or {})
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+ 
+    actor_id = _current_user_id()
+ 
+    try:
+        entry = recalculate_credit_score(
+            customer_profile_id=customer_profile_id,
+            new_tier=data["new_tier"],
+            score_components=data.get("score_components"),
+            actor_id=actor_id,
+        )
+    except AuthError as exc:
+        return _auth_error_response(exc)
