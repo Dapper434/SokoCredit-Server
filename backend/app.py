@@ -35,6 +35,9 @@ def create_app(config_name : str = None) -> Flask:
     from origination.routes import origination_bp
     app.register_blueprint(origination_bp, url_prefix="/api/origination")
 
+    from underwriting.routes import underwriting_bp
+    app.register_blueprint(underwriting_bp, url_prefix="/api/underwriting")
+
     from foundations.auth import register_jwt_callbacks
     register_jwt_callbacks(jwt)
 
