@@ -34,3 +34,7 @@ approval_decision_schema = ApprovalDecisionSchema()
 credit_score_log_schema = CreditScoreLogSchema()
 credit_score_recalculate_schema = CreditScoreRecalculateSchema()
 available_credit_schema = AvailableCreditSchema()
+
+def _current_user_id()-> int:
+    return int(get_jwt_identity())
+
