@@ -63,3 +63,7 @@ class CreditScoringSchema(Schema):
     new_tier = fields.Str(dump_only=True, validate=validate.OneOf(CREDIT_TIERS))
     score_components = fields.Dict(dump_only=True, allow_none=True)
     calculated_at = fields.DateTime(dump_only=True)
+
+class CreditScoreRecalculateSchema(Schema):
+    new_tier = fields.Str(required=True, validate=validate.OneOf(CREDIT_TIERS))
+    score_components = fields.Dict(required=False, allow_none=True)
