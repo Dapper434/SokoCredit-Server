@@ -67,3 +67,7 @@ class CreditScoringSchema(Schema):
 class CreditScoreRecalculateSchema(Schema):
     new_tier = fields.Str(required=True, validate=validate.OneOf(CREDIT_TIERS))
     score_components = fields.Dict(required=False, allow_none=True)
+
+class AvailableCreditSchema(Schema):
+    customer_profile_id = fields.Int(dump_only=True)
+    available_credit = fields.Decimal(as_string=True, dump_only=True)
