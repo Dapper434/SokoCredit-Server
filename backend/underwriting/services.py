@@ -189,10 +189,10 @@ def disburse_loan(
     #writes into disbursed_at and flips status to active
     #depends on Servicing module so is a stub as for now
 
-    loan = _get_loan_or_404(loan_id)
+    loan = get_loan(loan_id)
     approval = _get_latest_approval(loan)
     if approval is None or approval.desicion != "approved":
-        raise ValueError("Loan must be approved before disbursment")
+        raise AuthError("Loan must be approved before disbursment", 400)
 
     raise NotImplementedError(
         "Servicing module not built yet."
