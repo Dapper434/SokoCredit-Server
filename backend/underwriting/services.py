@@ -206,6 +206,8 @@ def get_available_credit(
     #managers can disburse exceptional first loans
     #FORMULA - (tier_multiplier * total_savings) - sum(outstanding_balance)
 
+    get_customer_profile(customer_profile_id)
+
     savings_account = SavingsAccount.query.filter_by(
         customer_profile_id=customer_profile_id
     ).first()
@@ -256,8 +258,10 @@ def recalculate_credit_score(
 ) -> CreditScoreLog:
     #rule based logic that decides a new tier based on score components
 
+    get_customer_profile(customer_profile_id)
+
     if new_tier not in CREDIT_TIERS:
-        raise ValueError(f"Invalid tier: {new_tier} must be one of {CREDIT_TIERS}.")
+        raise AuthError(f"Invalid tier: {new_tier} must be one of {CREDIT_TIERS}.", 400)
 
     latest = (
         CreditScoreLog.query.filter_by(customer_profile_id=customer_profile_id)
@@ -276,7 +280,7 @@ def recalculate_credit_score(
     db.session.add(entry)
     db.session.commit()
 
-    set_credit_tier(customer_profile_id=customer_profile_id, tier=new_tier)
+    set_credit_tier(customer_profile_id=customer_profile_id, tier=new_tier, actor_id=actor_id)
 
     if actor_id is not None:
         log_action(
