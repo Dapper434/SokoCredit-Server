@@ -56,7 +56,7 @@ class ApprovalDecisionSchema(Schema):
 
 #credit scoring
 
-class CreditScoringSchema(Schema):
+class CreditScoreLogSchema(Schema):
     id = fields.Int(dump_only=True)
     customer_profile_id = fields.Int(dump_only=True)
     previous_tier = fields.Str(dump_only=True, allow_none=True)
