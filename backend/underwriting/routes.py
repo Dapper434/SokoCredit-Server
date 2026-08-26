@@ -69,3 +69,22 @@ def get_loan_route(loan_id):
         return _auth_error_response(exc)
 
     return jsonify(loan_schema.dump(loan)), 200
+
+@underwriting_bp.route("/loans/<int:loan_id/approve", methods=["POST"])
+@permission_required("loan:approve")
+def approve_loan_route(loan_id):
+    #granted to manager admin & superadmin
+
+    try:
+        data = approval_decision_schema.load(request.get_json(silent=True) or {})
+    except ValidationError as err:
+        return jsonify ({"errors": err.messages}), 400
+
+    checker_id = _current_user_id()
+
+    try:
+        loan = approve_loan(loan_id=loan_id, checker_id=checker_id, notes=data.get("notes"))
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
+    return jsonify(loan_schema.dump(loan)), 200
