@@ -49,3 +49,8 @@ class LoanApprovalSchema(Schema):
     decision = fields.Str(dump_only=True, validate=validate.OneOf(APPROVAL_DECISIONS))
     maker_action_at = fields.DateTime(dump_only=True)
     checker_action_at = fields.DateTime(dump_only=True, allow_none=True)
+
+
+class ApprovalDecisionSchema(Schema):
+    notes = fields.Str(required=False, allow_none=True)
+
