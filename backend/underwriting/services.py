@@ -3,17 +3,17 @@ from typing import Any, Optional
 
 from extensions import db
 from foundations.models import User
+from foundations.auth import AuthError, get_user_institution_id, verify_institution_access
 from foundations.audit import log_action
-from origination.services import set_credit_tier
+from origination.services import set_credit_tier, get_customer_profile
 
 from underwriting.models import (
-    CreditScoreLog,
     Loan,
     LoanApproval,
+    SavingsAccount,
     CreditScoreLog,
     CREDIT_TIERS,
-    SavingsAccount,
-    utcnow
+    utcnow,
 )
 
 #placeholder tiering for get_available_credit()
@@ -24,32 +24,6 @@ TIER_MULTIPLIERS = {
 }
 
 #Internal helpers
-
-def _require_role(
-    user_id:int,
-    allowed_roles:tuple[str,...]
-) -> User:
-    #fetches foundation user and confirms they are authorized to perform the action
-
-    user = db.session.get(User, user_id)
-    if user is None:
-        raise ValueError(f"No such user for id:{user_id}")
-
-    if user.role not in allowed_roles:
-        raise PermissionError(
-            f"User {user_id} with role '{user.role}' is authorized for this action "
-        )
-    return user
-
-
-def _get_loan_or_404(
-    loan_id:int
-) -> Loan:
-    loan = db.session.get(Loan, loan_id)
-    if loan is None:
-        raise ValueError(f"No such loan for id {loan_id}")
-    return loan
-
 def _get_latest_approval(
     loan:Loan
 ) -> Optional[LoanApproval]:
