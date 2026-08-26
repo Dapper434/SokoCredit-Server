@@ -54,3 +54,12 @@ class LoanApprovalSchema(Schema):
 class ApprovalDecisionSchema(Schema):
     notes = fields.Str(required=False, allow_none=True)
 
+#credit scoring
+
+class CreditScoringSchema(Schema):
+    id = fields.Int(dump_only=True)
+    customer_profile_id = fields.Int(dump_only=True)
+    previous_tier = fields.Str(dump_only=True, allow_none=True)
+    new_tier = fields.Str(dump_only=True, validate=validate.OneOf(CREDIT_TIERS))
+    score_components = fields.Dict(dump_only=True, allow_none=True)
+    calculated_at = fields.DateTime(dump_only=True)
