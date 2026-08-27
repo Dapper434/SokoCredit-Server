@@ -2,7 +2,6 @@ from decimal import Decimal
 from typing import Any, Optional
 
 from extensions import db
-from foundations.models import User
 from foundations.auth import AuthError, get_user_institution_id, verify_institution_access
 from foundations.audit import log_action
 from origination.services import set_credit_tier, get_customer_profile
@@ -54,7 +53,7 @@ def list_loan_approvals(
     )
 
 #Maker-Checker Workflow
-#loan_officer creates loan manager/admin aproves loan
+#loan_officer creates loan manager/admin approves loan
 
 def propose_loan(
     actor_id: int,
@@ -119,7 +118,7 @@ def approve_loan(
     checker_id: int,
     notes: Optional[str]= None
 ) -> Loan:
-    #only manager/admin/superadmin can approve loan
+    #only manager/admin/super-admin can approve loan
     #only approves loan and passes decision to Servicing.disburse_loan
 
     loan = get_loan(loan_id)
@@ -191,7 +190,7 @@ def disburse_loan(
 
     loan = get_loan(loan_id)
     approval = _get_latest_approval(loan)
-    if approval is None or approval.desicion != "approved":
+    if approval is None or approval.decision != "approved":
         raise AuthError("Loan must be approved before disbursment", 400)
 
     raise NotImplementedError(
@@ -239,7 +238,7 @@ def _get_total_outstanding_balance(
     #calls servicing.services_get_outstanding_balance per active loan
     #sums the results to grow customer's available credit limit
 
-    active_loans = Loan.query.filer_by(
+    active_loans = Loan.query.filter_by(
         customer_profile_id=customer_profile_id,
         status="active"
     ).all()
