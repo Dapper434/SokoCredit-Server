@@ -42,3 +42,12 @@ def _completed_cycle_points(
         if completed_cycles >= threshold:
             return points
     return 0
+
+def savings_points(
+    is_savings_mature: bool,
+    savings_balance: Decimal
+) -> int:
+    if not is_savings_mature:
+        return 0
+    return 20 if savings_balance >= SAVINGS_BALANCE_THRESHOLD else 10
+
