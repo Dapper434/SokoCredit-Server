@@ -85,7 +85,7 @@ def list_loan_approvals_route(loan_id):
 @underwriting_bp.route("/loans/<int:loan_id>/approve", methods=["POST"])
 @permission_required("loan:approve")
 def approve_loan_route(loan_id):
-    #granted to manager admin & superadmin
+    #granted to manager admin & super_admin
 
     try:
         data = approval_decision_schema.load(request.get_json(silent=True) or {})
@@ -157,9 +157,13 @@ def recalculate_credit_score_route(customer_profile_id):
     try:
         entry = recalculate_credit_score(
             customer_profile_id=customer_profile_id,
-            new_tier=data["new_tier"],
-            score_components=data.get("score_components"),
+            on_time_rate=data["on_time_rate"],
+            completed_loan_cycles=data["completed_loan_cycles"],
+            has_defaulted_loan=data["has_defaulted_loan"],
+            reschedule_count=data["reschedule_count"],
             actor_id=actor_id,
         )
     except AuthError as exc:
         return _auth_error_response(exc)
+ 
+    return jsonify(credit_score_log_schema.dump(entry)), 201
