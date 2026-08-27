@@ -5,6 +5,7 @@ from extensions import db
 from foundations.auth import AuthError, get_user_institution_id, verify_institution_access
 from foundations.audit import log_action
 from origination.services import set_credit_tier, get_customer_profile
+from underwriting.scoring import compute_credit_tier
 
 from underwriting.models import (
     Loan,
@@ -21,6 +22,53 @@ TIER_MULTIPLIERS = {
     "B": Decimal("2"),
     "C": Decimal("1")
 }
+
+#minimum savings balance to earn higher "mature" scoring
+
+SAVINGS_BALANCE_THRESHOLD = Decimal("5000")
+
+def compute_credit_tier(
+    on_time_rate: Decimal,
+    completed_loan_cycles: int,
+    has_default: bool,
+    reschedule_count: int,
+    is_savings_mature: bool,
+    savings_balance: Decimal,      
+) -> str:
+
+    if has_default:
+        return "C"
+
+    points = 0
+
+    if on_time_rate >= Decimal("0.95"):
+        points += 40
+    elif on_time_rate >= Decimal("0.80"):
+        points += 25
+    elif on_time_rate >= Decimal("0.60"):
+        points += 10
+
+    if completed_loan_cycles >= 3:
+        points += 30
+    elif completed_loan_cycles >= 1:
+        points += 15
+
+    if is_savings_mature and savings_balance >= SAVINGS_BALANCE_THRESHOLD:
+        points += 20
+    elif is_savings_mature:
+        points += 10
+
+    if reschedule_count >= 0:
+        points += 10
+    elif reschedule_count >= 2:
+        points -= 10
+
+    if points >= 70:
+        return "A"
+    elif points >= 40:
+        return "B"
+    return "C"
+
 
 #Internal helpers
 def _get_latest_approval(
