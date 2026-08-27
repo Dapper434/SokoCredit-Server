@@ -70,6 +70,18 @@ def get_loan_route(loan_id):
 
     return jsonify(loan_schema.dump(loan)), 200
 
+@underwriting_bp.bp.route("/loans/<int:loan_id>/approvals", methods=["GET"])
+@jwt_required()
+def list_loan_approvals_route(loan_id):
+    """full maker checker history for a loan"""
+    try:
+        approvals = fetch_loan_approvals(loan_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
+    return jsonify(loan_approval_schema.dump(approvals, many=True)), 200
+
+
 @underwriting_bp.route("/loans/<int:loan_id>/approve", methods=["POST"])
 @permission_required("loan:approve")
 def approve_loan_route(loan_id):
@@ -134,7 +146,7 @@ def get_available_credit_route(customer_profile_id):
 @underwriting_bp.route("/customers/<int:customer_profile_id>/credit-score", methods=["POST"])
 @jwt_required()
 def recalculate_credit_score_route(customer_profile_id):
-    #revisited once real scoring engine exisits
+    #revisited once real scoring engine exists
     try:
         data = credit_score_recalculate_schema.load(request.get_json() or {})
     except ValidationError as err:
