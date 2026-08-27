@@ -70,7 +70,7 @@ def get_loan_route(loan_id):
 
     return jsonify(loan_schema.dump(loan)), 200
 
-@underwriting_bp.bp.route("/loans/<int:loan_id>/approvals", methods=["GET"])
+@underwriting_bp.route("/loans/<int:loan_id>/approvals", methods=["GET"])
 @jwt_required()
 def list_loan_approvals_route(loan_id):
     """full maker checker history for a loan"""
