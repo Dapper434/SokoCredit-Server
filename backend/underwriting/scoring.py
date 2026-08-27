@@ -51,3 +51,9 @@ def savings_points(
         return 0
     return 20 if savings_balance >= SAVINGS_BALANCE_THRESHOLD else 10
 
+def _reschedule_points(
+    reschedule_count: int  
+) -> int:
+    if reschedule_count >= 2:
+        return RESCHEDULE_POINTS_TWO_OR_MORE
+    return RESCHEDULE_POINTS.get(reschedule_count, 0)
