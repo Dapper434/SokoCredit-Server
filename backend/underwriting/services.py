@@ -332,16 +332,36 @@ def _get_total_outstanding_balance(
 
 def recalculate_credit_score(
     customer_profile_id: int,
-    new_tier: str,
-    score_components: Optional[dict[str, Any]] = None,
+    on_time_rate: Decimal,
+    completed_loan_cycles: int,
+    has_defaulted_loan: bool,
+    reschedule_count: int,
     actor_id: Optional[int] = None,    
 ) -> CreditScoreLog:
     #rule based logic that decides a new tier based on score components
+    #calls compute_credit_tier
+    #Savings inputs (is_savings_mature, savings_balance) pulled from SavingsAccount
+    #remaining inputs called from Servicing module (on_time_rate, completed_loan_cycles, has_default, reschedule_count)
 
     get_customer_profile(customer_profile_id)
+    #enforce institution access
 
-    if new_tier not in CREDIT_TIERS:
-        raise AuthError(f"Invalid tier: {new_tier} must be one of {CREDIT_TIERS}.", 400)
+    savings_account = SavingsAccount.query.filter_by(
+        customer_profile_id=customer_profile_id
+    ).first()
+
+    is_savings_mature = savings_account.is_savings_mature if savings_account else False
+
+    savings_balance = savings_account.total_savings_balance if savings_account else Decimal("0")
+
+    new_tier, score_components = compute_credit_tier(
+        on_time_rate=on_time_rate,
+        completed_loan_cycles=completed_loan_cycles,
+        has_defaulted_loan=has_defaulted_loan,
+        reschedule_count=reschedule_count,
+        is_savings_mature=is_savings_mature,
+        savings_balance=savings_balance,
+    )
 
     latest = (
         CreditScoreLog.query.filter_by(customer_profile_id=customer_profile_id)
@@ -357,10 +377,15 @@ def recalculate_credit_score(
         new_tier=new_tier,
         score_components=score_components,
     )
+
     db.session.add(entry)
     db.session.commit()
 
-    set_credit_tier(customer_profile_id=customer_profile_id, tier=new_tier, actor_id=actor_id)
+    set_credit_tier(
+        customer_profile_id=customer_profile_id,
+        tier=new_tier,
+        actor_id=actor_id,
+    )
 
     if actor_id is not None:
         log_action(
