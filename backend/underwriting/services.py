@@ -70,6 +70,39 @@ def compute_credit_tier(
     return "C"
 
 
+def determine_and_recalculate_credit_score(
+   customer_profile_id: int,
+   actor_id: Optional[int] = None,     
+) -> CreditScoreLog:
+   """
+   stub
+   blocked because on_time_rate, completed_loan_cycles, has_default, reschedule_count, is_savings_mature, savings_balance are not available
+   requires Servicing module
+
+   from servicing.services import get_repayment_stats
+    stats = get_repayment_stats(customer_profile_id)
+    savings = SavingsAccount.query.filter_by(
+        customer_profile_id=customer_profile_id).first()
+    new_tier = compute_credit_tier(
+        on_time_rate=stats.on_time_rate,
+        completed_loan_cycles=stats.completed_cycles,
+        has_default=stats.has_default,
+        reschedule_count=stats.reschedule_count,
+        is_savings_mature=savings.is_savings_mature if savings else False,
+        savings_balance=savings.total_savings_balance if savings else Decimal("0"),
+    )
+    return recalculate_credit_score(
+        customer_profile_id, new_tier,
+        score_components={...},  # the raw inputs above, for the audit trail
+        actor_id=actor_id,
+    )
+   """
+
+   raise NotImplementedError(
+       "Servicing module not built yet."
+   )
+
+    
 #Internal helpers
 def _get_latest_approval(
     loan:Loan
