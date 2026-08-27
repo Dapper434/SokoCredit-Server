@@ -99,9 +99,9 @@ class CreditScoreLog(db.Model):
 
     __tablename__ = "credit_score_log"
 
-    id = db.Column(db.integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     customer_profile_id = db.Column(
-        db.Integer, db.ForeignKey("customer_profile.id"), nullable=False,index=True
+        db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False,index=True
     )
 
     previous_tier = db.Column(db.String(10), nullable=True)
