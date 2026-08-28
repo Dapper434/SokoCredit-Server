@@ -77,7 +77,7 @@ class LoanApproval(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     loan_id = db.Column(db.Integer, db.ForeignKey("loans.id"), nullable=False, index=True)
     maker_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    checker_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    checker_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
 
     maker_notes = db.Column(db.Text, nullable=True)
     checker_notes = db.Column(db.Text, nullable=True)

@@ -157,7 +157,7 @@ def set_credit_tier(
     tier:str,
     actor_id:Optional[int]=None     
 ) -> CustomerProfile:
-    #called by underwriting afte revery credit score recalculation
+    #called by underwriting after every credit score recalculation
 
     if tier not in CREDIT_TIERS:
         raise AuthError(f"Invalid credit tier '{tier}'. Must be one of {CREDIT_TIERS}. ", 400)
