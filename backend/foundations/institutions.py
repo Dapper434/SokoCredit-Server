@@ -139,10 +139,26 @@ def attach_document(
         entity_id=doc.id,
         action="create",
         before=None,
-        after={"document_type": document_type, "file_url": file_url},
+        after={"document_type": document_type, "storage_path": path},
         lending_institution_id=lending_institution_id,
     )
     return doc
+
+def get_document_download_url(
+    document_id:int,
+    requester_institution_id: int
+) -> str:
+    """
+    called by the download routes
+    institution scoping checked before we generate a signed url
+    """
+
+    doc = db.session.get(InstitutionDocument, document_id)
+    if doc is None:
+        raise AuthError("No such document.", 404)
+    if doc.lending_institution != requester_institution_id:
+        raise AuthError("This document does not belong to your institution.", 403)
+    return storage.generate_signed_url(doc.storage_path)
 
 
 def add_market(
@@ -150,7 +166,7 @@ def add_market(
     market_name:str,
     actor_id:int
 ) -> InstitutionMarket:
-    #adds institution's operaing markets
+    #adds institution's operating markets
     existing_count = InstitutionMarket.query.filter_by(
         lending_institution_id=lending_institution_id
     ).count()
