@@ -34,4 +34,18 @@ def _get_client():
             )
         current_app.extensions["supabase"] = create_client(url, key)
     return current_app.extensions["supabase"]
+
+
+def build_object_path(
+    module_prefix:str,
+    owner_id: int,
+    original_filename: str
+) -> str:
+    #builds the objects path within th shared bucket
     
+    #generate a unique filename for security
+    safe_name = secure_filename(original_filename) or "file"
+    #add a random prefix to ensure uniqueness
+    unique_name = f"{uuid.uuid4().hex}_{safe_name}"
+
+    return f"{module_prefix}/{owner_id}/{unique_name}"
