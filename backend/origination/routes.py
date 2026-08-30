@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from marshmallow import ValidationError
 
 from foundations.auth import AuthError, get_current_user
-from origination.services import create_customer_profile, get_customer_profile, add_document,award_badge
+from origination.services import create_customer_profile, get_customer_profile, add_document,award_badge, get_document_download_url
 from origination.schemas import (
     CustomerProfileCreateSchema,
     DocumentUploadSchema,
@@ -64,6 +64,12 @@ def upload_document(customer_id):
         uploaded_by=actor.id,
     )
     return jsonify({"id": doc.id, "document_type": doc.document_type}), 201
+
+origination_bp.get("/customers/<int:customer_id>/documents/<int:document_id>/download")
+@jwt_required()
+def download_document(customer_id,document_id):
+    url = get_document_download_url(document_id)
+    return jsonify({"url": url}), 200
 
 @origination_bp.post("/customers/<int:customer_id>/badges")
 @jwt_required()
