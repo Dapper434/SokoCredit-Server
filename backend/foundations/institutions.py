@@ -7,6 +7,7 @@ from extensions import db
 from foundations.models import LendingInstitution, InstitutionDocument, InstitutionMarket, User
 from foundations.auth import AuthError, register_user
 from foundations.audit import log_action
+from foundations import storage
 
 MAX_MARKETS_PER_INSTITUTION = 6
 
@@ -102,19 +103,31 @@ def register_institution(
 def attach_document(
     lending_institution_id: int,
     document_type:str,
-    file_url: str,
+    file_bytes: bytes,
+    content_type: str,
+    original_filename:str,
     uploaded_by: int,
 ) -> InstitutionDocument:
-    #records metadata for compliance documents upload
+    """
+    Uploads to supabase storage, records metadata row
+    """
 
     institution = db.session.get(LendingInstitution, lending_institution_id)
     if institution is None:
         raise AuthError("No such institution", 404)
 
+    storage.validate_upload(content_type, len(file_bytes))
+    path = storage.build_object_path(
+        "institution",
+        lending_institution_id,
+        original_filename
+    )
+
     doc = InstitutionDocument(
         lending_institution = lending_institution_id,
         document_type=document_type,
-        file_url=file_url,
+        storage_path=path,
+        content_type=content_type,
         uploaded_by=uploaded_by,
     )
     db.session.add(doc)
@@ -129,7 +142,6 @@ def attach_document(
         after={"document_type": document_type, "file_url": file_url},
         lending_institution_id=lending_institution_id,
     )
-
     return doc
 
 
