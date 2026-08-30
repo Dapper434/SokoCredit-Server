@@ -72,7 +72,7 @@ def upload_file(
     uploads to the shared bucket and returns the ob path
     path then gets saved to the document row's storage_path column
     """
-    client = _get_client
+    client = _get_client()
     bucket = current_app.config["SUPABASE_STORAGE_BUCKET"]
 
     try:
@@ -82,3 +82,26 @@ def upload_file(
     except Exception as exc:
         raise StorageError(f"Upload failed:{exc}", 502)
     return path
+
+def generate_signed_url(
+    path: str,
+    expires_in: Optional[int] = None
+) -> str:
+    """
+    called by download routes to generate a signed_url
+    this grants access to fetch the file directly from Supabase for the next 'expires_in' seconds
+    routes perform rbac checks to confirm who can download the file
+    """
+
+    client = _get_client()
+    bucket = current_app.config["SUPABASE_STORAGE_BUCKET"]
+    expires_in = expires_in or current_app.config["SIGNED_URL_EXPIRES_IN_SECONDS"]
+
+    try:
+        response = client.storage.from_(bucket).create_signed_url(
+            path, expires_in
+        )
+    except Exception as exc:
+        raise StorageError(f"Could not generate signed URL: {exc}", 502)
+
+    return response["signedURL"]
