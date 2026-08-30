@@ -103,5 +103,14 @@ def generate_signed_url(
         )
     except Exception as exc:
         raise StorageError(f"Could not generate signed URL: {exc}", 502)
-
     return response["signedURL"]
+
+def delete_file(
+    path:str
+) -> None:
+    client = _get_client()
+    bucket = current_app.config["SUPABASE_STORAGE_BUCKET"]
+    try:
+        client.storage.from_(bucket).remove(path)
+    except Exception as exc:
+        raise StorageError(f"Delete failed: {exc}", 502)
