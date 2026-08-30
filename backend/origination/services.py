@@ -130,7 +130,7 @@ def add_document(
     )
     return doc
 
-def get_document_url(
+def get_document_download_url(
     document_id:int
 ) -> str:
     doc = db.session.get(CustomerDocument, document_id)
