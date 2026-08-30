@@ -49,3 +49,15 @@ def build_object_path(
     unique_name = f"{uuid.uuid4().hex}_{safe_name}"
 
     return f"{module_prefix}/{owner_id}/{unique_name}"
+
+
+def validate_upload(
+    content_type: str,
+    size:int
+) -> None:
+    #called before upload_file() to validate file upload
+    if content_type not in ALLOWED_CONTENT_TYPES:
+        raise StorageError("Unsupported file type.", 400)
+
+    if size > MAX_FILE_SIZE_BYTES:
+        raise StorageError("File too large.", 413)
