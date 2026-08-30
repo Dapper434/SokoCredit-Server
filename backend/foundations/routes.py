@@ -9,6 +9,7 @@ from foundations.auth import (
     issue_tokens,
     get_current_user,
     role_required,
+    verify_institution_access
 )
 
 from foundations.institutions import register_institution, attach_document, add_market, get_document_download_url
@@ -72,6 +73,13 @@ def upload_document(institution_id):
         uploaded_by=actor.id,
     )
     return jsonify({"id": doc.id, "document_type": doc.document_type}), 201
+
+@foundation_bp.get("/institutions/<int:institution_id>/documents/<int:document_id>/download")
+@jwt_required()
+def download_document(institution_id, document_id):
+    verify_institution_access(institution_id)
+    url = get_document_download_url(document_id, institution_id)
+    return jsonify({"url": url}), 200
 
 @foundation_bp.post("/login")
 def login():
