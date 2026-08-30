@@ -10,7 +10,7 @@ INSTITUTION_STATUSES=("pending_review","active","suspended")
 USER_STATUSES=("pending","active","suspended")
 
 
-#freshy called every time a row is inserted
+#freshly called every time a row is inserted
 def utcnow():
     return datetime.now(timezone.utc)
 
@@ -24,7 +24,7 @@ class LendingInstitution(db.Model):
 
    id = db.Column(db.Integer, primary_key=True)
 
-   #Business identity & physical prescence -> page 1
+   #Business identity & physical presence -> page 1
    registered_business_name = db.Column(db.String(255), nullable=False)
    registration_number = db.Column(db.String(100), unique=True, nullable=False)
    #BRS reg / cert no
@@ -120,7 +120,8 @@ class InstitutionDocument(db.Model):
         db.Integer, db.ForeignKey("lending_institutions.id"), nullable=False, index=True
     )
     document_type = db.Column(db.String(50), nullable=False)
-    file_url = db.Column(db.String(500), nullable=False)
+    storage_path = db.Column(db.String(500), nullable=False)
+    content_type = db.Column(db.String(100), nullable=False)
     uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     uploaded_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
 
