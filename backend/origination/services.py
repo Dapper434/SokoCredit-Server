@@ -130,6 +130,16 @@ def add_document(
     )
     return doc
 
+def get_document_url(
+    document_id:int
+) -> str:
+    doc = db.session.get(CustomerDocument, document_id)
+    if doc is None:
+        raise AuthError("No such document.", 404)
+    profile = db.session.get(CustomerProfile, doc.customer_profile_id)
+    _verify_profile_institution_access(profile)
+    return storage.generate_signed_url(doc.storage_path)
+
 
 def award_badge(
     customer_profile_id: int,
