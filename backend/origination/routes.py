@@ -47,15 +47,23 @@ def get_customer(customer_id):
 @origination_bp.post("/customers/<int:customer_id>/documents")
 @jwt_required()
 def upload_document(customer_id):
-    data = DocumentUploadSchema().load(request.get_json() or {})
     actor = get_current_user()
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in the request."}), 400
+    file = request.files["file"]
+    document_type = request.form.get("document_type")
+    if not document_type:
+        return jsonify({"error": "document_type is required."}), 400
+
     doc = add_document(
         customer_profile_id=customer_id,
-        document_type=data["document_type"],
-        file_url=data["file_url"],
+        document_type=document_type,
+        file_bytes=file.read(),
+        content_type=file.content_type,
+        original_filename=file.filename,
         uploaded_by=actor.id,
     )
-    return jsonify({"id": doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
+    return jsonify({"id": doc.id, "document_type": doc.document_type}), 201
 
 @origination_bp.post("/customers/<int:customer_id>/badges")
 @jwt_required()
