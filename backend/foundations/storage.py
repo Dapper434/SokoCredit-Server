@@ -53,11 +53,32 @@ def build_object_path(
 
 def validate_upload(
     content_type: str,
-    size:int
+    size_bytes:int
 ) -> None:
     #called before upload_file() to validate file upload
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise StorageError("Unsupported file type.", 400)
 
-    if size > MAX_FILE_SIZE_BYTES:
+    if size_bytes > MAX_FILE_SIZE_BYTES:
         raise StorageError("File too large.", 413)
+
+
+def upload_file(
+    path: str,
+    file_bytes: bytes,
+    content_type: str
+) -> str:
+    """
+    uploads to the shared bucket and returns the ob path
+    path then gets saved to the document row's storage_path column
+    """
+    client = _get_client
+    bucket = current_app.config["SUPABASE_STORAGE_BUCKET"]
+
+    try:
+        client.storage.from_(bucket).upload(
+            path,file_bytes,{"content-type": content_type}
+        )
+    except Exception as exc:
+        raise StorageError(f"Upload failed:{exc}", 502)
+    return path
