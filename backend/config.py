@@ -32,6 +32,11 @@ class Config:
         if origin.strip()
     ]
 
+    SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+    SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    SUPABASE_STORAGE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "documents")
+    SIGNED_URL_EXPIRES_IN_SECONDS = int(os.environ.get("SIGNED_URL_EXPIRES_IN_SECONDS", "300"))
+
 class DevelopmentConfig(Config):
     DEBUG = True
 
