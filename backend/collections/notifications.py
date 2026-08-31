@@ -49,4 +49,39 @@ def send_sms(
         raise NotificationDispatchError(
             f"SMS dispatch failed:{exc}"
         ) from exc
+
+def send_whatsapp(
+    to_phone_number: str,
+    body:str
+) -> str:
+    """
+    sends a WhatsApp message using the Twilio API and returns the unique message identifier (the SID) if it succeeds
+    """
+
+    #set up twilio api connection
+    client = _get_twilio_client()
+
+    #looks up configured whatsapp number in app config
+    from_number = current_app.config.get("TWILIO_WHATSAPP_FROM_NUMBER")
+
+    if not from_number:
+        raise NotificationDispatchError(
+            "TWILIO_WHATSAPP_FROM_NUMBER not configured."
+        )
+
+    #sets up the "whatsapp" prefix if you forgot to add it
+    to_whatsapp = to_phone_number if to_phone_number.startswith("whatsapp:") else f"whatsapp:{to_phone_number}"
+
+    try:
+        message = client.messages.create(
+            to=to_whatsapp,
+            from_=from_number,
+            body=body
+        )
+        return message.sid
+
+    except Exception as exc:
+        raise NotificationDispatchError(
+            f"WhatsApp dispatch failed: {exc}"
+        ) from exc
         
