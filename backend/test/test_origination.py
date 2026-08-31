@@ -2,6 +2,7 @@ import pytest
 
 from app import create_app
 from extensions import db
+import io
 
 
 @pytest.fixture
@@ -88,7 +89,10 @@ def test_cannot_read_customer_profile_from_another_institution(client):
     assert r.status_code == 403
 
 
-def test_document_upload_and_badge_award(client):
+def test_document_upload_and_badge_award(client, monkeypatch):
+    from foundations import storage
+    monkeypatch.setattr(storage, "upload_file", lambda path, b, c: path)
+
     token, admin_id = signup_institution(client)
     r = client.post(
         "/api/origination/customers",
@@ -100,9 +104,11 @@ def test_document_upload_and_badge_award(client):
     r = client.post(
         f"/api/origination/customers/{profile_id}/documents",
         headers={"Authorization": f"Bearer {token}"},
-        json={"document_type": "national_id", "file_url": "https://example.com/id.pdf"},
+        data={"document_type": "national_id", "file": (io.BytesIO(b"fake bytes"), "id.pdf", "application/pdf")},
+        content_type="multipart/form-data",
     )
     assert r.status_code == 201
+       
 
 
 def test_set_credit_tier_via_service_directly(app, client):
