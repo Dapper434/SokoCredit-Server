@@ -89,7 +89,7 @@ def test_cannot_read_customer_profile_from_another_institution(client):
     assert r.status_code == 403
 
 
-def test_document_upload_and_badge_award(client):
+def test_document_upload_and_badge_award(client, monkeypatch):
     from foundations import storage
     monkeypatch.setattr(storage, "upload_file", lambda path, b, c: path)
 

@@ -6,7 +6,6 @@ from foundations.auth import AuthError, get_current_user
 from origination.services import create_customer_profile, get_customer_profile, add_document,award_badge, get_document_download_url
 from origination.schemas import (
     CustomerProfileCreateSchema,
-    DocumentUploadSchema,
     BadgeAwardSchema,
     CustomerProfileSchema,
 )
@@ -65,7 +64,7 @@ def upload_document(customer_id):
     )
     return jsonify({"id": doc.id, "document_type": doc.document_type}), 201
 
-origination_bp.get("/customers/<int:customer_id>/documents/<int:document_id>/download")
+@origination_bp.get("/customers/<int:customer_id>/documents/<int:document_id>/download")
 @jwt_required()
 def download_document(customer_id,document_id):
     url = get_document_download_url(document_id)
