@@ -4,6 +4,7 @@
 
 from datetime import date
 from typing import Optional
+from foundations import storage
 
 from extensions import db
 from origination.models import (
@@ -94,15 +95,23 @@ def get_customer_profile(customer_profile_id: int) -> CustomerProfile:
 def add_document(
     customer_profile_id: int,
     document_type: str,
-    file_url: str,
+    file_bytes:bytes,
+    content_type: str,
+    original_filename: str,
     uploaded_by: int, 
 ) -> CustomerDocument:
     profile = get_customer_profile(customer_profile_id)
+    institution_id = get_user_institution_id(profile.user_id)
+
+    storage.validate_upload(content_type, len(file_bytes))
+    path = storage.build_object_path("customer", profile.id, original_filename)
+    storage.upload_file(path, file_bytes, content_type)
 
     doc = CustomerDocument(
         customer_profile_id=profile.id,
         document_type=document_type,
-        file_url=file_url,
+        storage_path=path,
+        content_type=content_type,
         uploaded_by=uploaded_by, 
     )
 
@@ -116,10 +125,20 @@ def add_document(
         entity_id=doc.id,
         action="create",
         before=None,
-        after={"document_type": document_type, "customer_profile_id": profile.id},
+        after={"document_type": document_type, "storage_path": path, "customer_profile_id": profile.id},
         lending_institution_id=institution_id,
     )
     return doc
+
+def get_document_download_url(
+    document_id:int
+) -> str:
+    doc = db.session.get(CustomerDocument, document_id)
+    if doc is None:
+        raise AuthError("No such document.", 404)
+    profile = db.session.get(CustomerProfile, doc.customer_profile_id)
+    _verify_profile_institution_access(profile)
+    return storage.generate_signed_url(doc.storage_path)
 
 
 def award_badge(

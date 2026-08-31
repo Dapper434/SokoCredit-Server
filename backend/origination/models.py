@@ -71,7 +71,8 @@ class CustomerDocument(db.Model):
         db.Integer, db.ForeignKey("customer_profiles.id"), nullable=False, index=True
     )
     document_type = db.Column(db.String(50), nullable=False)
-    file_url = db.Column(db.String(500), nullable=False)
+    storage_path = db.Column(db.String(500), nullable=False)
+    content_type = db.Column(db.String(100), nullable=False)
 
     uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     uploaded_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)

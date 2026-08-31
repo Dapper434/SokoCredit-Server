@@ -7,6 +7,7 @@ from extensions import db
 from foundations.models import LendingInstitution, InstitutionDocument, InstitutionMarket, User
 from foundations.auth import AuthError, register_user
 from foundations.audit import log_action
+from foundations import storage
 
 MAX_MARKETS_PER_INSTITUTION = 6
 
@@ -102,19 +103,32 @@ def register_institution(
 def attach_document(
     lending_institution_id: int,
     document_type:str,
-    file_url: str,
+    file_bytes: bytes,
+    content_type: str,
+    original_filename:str,
     uploaded_by: int,
 ) -> InstitutionDocument:
-    #records metadata for compliance documents upload
+    """
+    Uploads to supabase storage, records metadata row
+    """
 
     institution = db.session.get(LendingInstitution, lending_institution_id)
     if institution is None:
         raise AuthError("No such institution", 404)
 
+    storage.validate_upload(content_type, len(file_bytes))
+    path = storage.build_object_path(
+        "institution",
+        lending_institution_id,
+        original_filename
+    )
+    storage.upload_file(path, file_bytes, content_type)
+
     doc = InstitutionDocument(
-        lending_institution = lending_institution_id,
+        lending_institution_id = lending_institution_id,
         document_type=document_type,
-        file_url=file_url,
+        storage_path=path,
+        content_type=content_type,
         uploaded_by=uploaded_by,
     )
     db.session.add(doc)
@@ -126,11 +140,26 @@ def attach_document(
         entity_id=doc.id,
         action="create",
         before=None,
-        after={"document_type": document_type, "file_url": file_url},
+        after={"document_type": document_type, "storage_path": path},
         lending_institution_id=lending_institution_id,
     )
-
     return doc
+
+def get_document_download_url(
+    document_id:int,
+    requester_institution_id: int
+) -> str:
+    """
+    called by the download routes
+    institution scoping checked before we generate a signed url
+    """
+
+    doc = db.session.get(InstitutionDocument, document_id)
+    if doc is None:
+        raise AuthError("No such document.", 404)
+    if doc.lending_institution_id != requester_institution_id:
+        raise AuthError("This document does not belong to your institution.", 403)
+    return storage.generate_signed_url(doc.storage_path)
 
 
 def add_market(
@@ -138,7 +167,7 @@ def add_market(
     market_name:str,
     actor_id:int
 ) -> InstitutionMarket:
-    #adds institution's operaing markets
+    #adds institution's operating markets
     existing_count = InstitutionMarket.query.filter_by(
         lending_institution_id=lending_institution_id
     ).count()

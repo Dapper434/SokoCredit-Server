@@ -9,9 +9,10 @@ from foundations.auth import (
     issue_tokens,
     get_current_user,
     role_required,
+    verify_institution_access
 )
 
-from foundations.institutions import register_institution, attach_document, add_market
+from foundations.institutions import register_institution, attach_document, add_market, get_document_download_url
 
 from foundations.schemas import (
     InstitutionRegistrationSchema,
@@ -51,19 +52,34 @@ def signup_organization():
         **tokens,
     }), 201
 
-@foundation_bp.post("/institutuions/<int:institution_id>/documents")
+@foundation_bp.post("/institutions/<int:institution_id>/documents")
 @jwt_required()
 def upload_document(institution_id):
-    #attach compliance document metadata
     actor = get_current_user()
-    body = request.get_json() or {}
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in the request."}), 400
+    file = request.files["file"]
+    document_type = request.form.get("document_type")
+    if not document_type:
+        return jsonify({"error": "document_type is required."}), 400
+ 
+    file_bytes = file.read()
     doc = attach_document(
         lending_institution_id=institution_id,
-        document_type=body.get("document_type"),
-        file_url=body.get("file_url"),
+        document_type=document_type,
+        file_bytes=file_bytes,
+        content_type=file.content_type,
+        original_filename=file.filename,
         uploaded_by=actor.id,
     )
-    return jsonify({"id":doc.id, "document_type": doc.document_type, "file_url": doc.file_url}), 201
+    return jsonify({"id": doc.id, "document_type": doc.document_type}), 201
+
+@foundation_bp.get("/institutions/<int:institution_id>/documents/<int:document_id>/download")
+@jwt_required()
+def download_document(institution_id, document_id):
+    verify_institution_access(institution_id)
+    url = get_document_download_url(document_id, institution_id)
+    return jsonify({"url": url}), 200
 
 @foundation_bp.post("/login")
 def login():
