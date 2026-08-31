@@ -129,3 +129,9 @@ def classify_aging_bucket(
         return "61-90"
     else:
         return "90+"
+
+def is_high_risk(
+    aging_bucket: str,
+    broken_promise_count: int
+) -> bool:
+    return aging_bucket in ("61-90", "90+") or broken_promise_count >= 2
