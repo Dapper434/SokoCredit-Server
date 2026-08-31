@@ -16,7 +16,7 @@ def _verify_staff_institution_access(user_id:int) -> None:
         raise AuthError("No such staff user, ot user has no institution.", 400)
     verify_institution_access(user_id, institution_id)
 
-#sending a notification
+#------- sending a notification ---------
 
 def send_notification(
     actor_id: int,
@@ -112,3 +112,20 @@ def send_notification(
     )
 
     return entry
+
+
+#-------- Aging / risk classification --------
+
+def classify_aging_bucket(
+    days_overdue: int
+) -> str:
+    if days_overdue <= 0:
+        return "current"
+    elif days_overdue <= 30:
+        return "0-30"
+    elif days_overdue <= 60:
+        return "31-60"
+    elif days_overdue <= 90:
+        return "61-90"
+    else:
+        return "90+"
