@@ -84,4 +84,19 @@ def send_whatsapp(
         raise NotificationDispatchError(
             f"WhatsApp dispatch failed: {exc}"
         ) from exc
+
+
+def send_email(
+    to_email: str,
+    subject: str,
+    body: str
+) -> None:
+    #send email to staff members
+    msg= MailMessage(subject=subject, recipients=[to_email],body=body)
+    try:
+        mail.send(msg)
+    except Exception as exc:
+        raise NotificationDispatchError(
+            f"Email dispatch failed: {exc}"
+        ) from exc
         
