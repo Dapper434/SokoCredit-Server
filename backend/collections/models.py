@@ -58,3 +58,28 @@ class NotificationLog(db.Model):
 
     def __repr__ (self):
         return f"<NotificationLog {self.id} {self.channel}/{self.message_type} status={self.delivery_status}>"
+
+
+class PromiseToPay(db.Model):
+    """
+    logged commitment from a customer to pay an overdue amount
+    distinguishes between a customer who goes "silent" and one that promises to pay a loan
+    creates another risk signal
+    """
+
+    __tablename__ = "promise_to_pay"
+    __table_args__ = (
+        db.CheckConstraint(
+            f"status IN {PROMISE_STATUSES}", name="ck_promise_to_pay_status_valid"
+        )
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    loan_id = db.Column(db.Integer, db.ForeignKey("loans.id"), nullable=False)
+    logged_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    promise_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="pending")
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<PromiseToPay loan={self.loan_id} status={self.status} due={self.promised_date}>"
