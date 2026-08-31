@@ -99,4 +99,27 @@ def send_email(
         raise NotificationDispatchError(
             f"Email dispatch failed: {exc}"
         ) from exc
+
+def dispatch(
+    channel: str,
+    recipient_contact:str,
+    body: str,
+    subject: str = None
+) -> str | None:
+    """
+    single entry point services.py should call- routes to the right gateway by channel
+    returns a provider reference (twilio SID) for sms/whatsapp
+    none for email
+    """
+
+    if channel == "sms":
+       return send_sms(recipient_contact, body)
+    elif channel == "whatsapp":
+        return send_sms(recipient_contact, body)
+    elif channel == "email":
+        send_email(recipient_contact, subject or "SokoCredit Notification", body)
+        return None
+    else:
+        raise ValueError(f"Unknown channel: {channel}")
+    
         
