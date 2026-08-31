@@ -135,3 +135,17 @@ def is_high_risk(
     broken_promise_count: int
 ) -> bool:
     return aging_bucket in ("61-90", "90+") or broken_promise_count >= 2
+
+#------ Servicing dependent(stubs) -------
+
+def run_overdue_detection() -> None:
+    """
+    is a stub for now
+    calls servicing.services.get_overdue_schedules(), classify each via 
+    classify_aging_bucket()
+    calls send_notification() for anything crossing a new bucket threshold
+    """
+    raise NotImplementedError(
+        "Servicing module not yet built (Phase 3). See docstring for the intended flow "
+        "once servicing.services.get_overdue_schedules() exists."
+    )
