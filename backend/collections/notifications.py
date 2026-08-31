@@ -25,3 +25,28 @@ def _get_twilio_client() -> Client:
             "Twilio credentials not configured - set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN"
         )
     return Client(account_sid, auth_token)
+
+def send_sms(
+    to_phone_number: str,
+    body: str
+) -> str:
+    "returns twilio message SID on success"
+    client = _get_twilio_client()
+    from_number = current_app.config("TWILIO_SMS_FROM_NUMBER")
+    if not from_number:
+        raise NotificationDispatchError(
+           "TWILIO_SMS_FROM_NUMBER not configured." 
+        )
+
+    try:
+        message = client.messages.create(
+            to= to_phone_number,
+            from_=from_number,
+            body=body
+        )
+        return message.sid
+    except Exception as exc:
+        raise NotificationDispatchError(
+            f"SMS dispatch failed:{exc}"
+        ) from exc
+        
