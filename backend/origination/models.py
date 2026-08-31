@@ -45,7 +45,7 @@ class CustomerProfile(db.Model):
     residential_address = db.Column(db.String(255), nullable=True)
     next_of_kin_name = db.Column(db.String(150), nullable=True)
     next_of_kin_phone = db.Column(db.String(20), nullable=True)
-
+    phone_number = db.Column(db.String(20), nullable=True, index=True)
     market_stall_id = db.Column(db.Integer, db.ForeignKey("market_stalls.id"), nullable=True, index=True)
 
     credit_tier = db.Column(db.String(1), nullable = True)
