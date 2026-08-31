@@ -122,9 +122,10 @@ def attach_document(
         lending_institution_id,
         original_filename
     )
+    storage.upload_file(path, file_bytes, content_type)
 
     doc = InstitutionDocument(
-        lending_institution = lending_institution_id,
+        lending_institution_id = lending_institution_id,
         document_type=document_type,
         storage_path=path,
         content_type=content_type,
@@ -156,7 +157,7 @@ def get_document_download_url(
     doc = db.session.get(InstitutionDocument, document_id)
     if doc is None:
         raise AuthError("No such document.", 404)
-    if doc.lending_institution != requester_institution_id:
+    if doc.lending_institution_id != requester_institution_id:
         raise AuthError("This document does not belong to your institution.", 403)
     return storage.generate_signed_url(doc.storage_path)
 
