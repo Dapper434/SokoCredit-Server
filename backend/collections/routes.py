@@ -118,3 +118,14 @@ def list_promises_route(loan_id):
         return _auth_error_response(exc)
  
     return jsonify(promise_schema.dump(promises, many=True)), 200
+
+@collections_bp.route("/promises/<int:promise_id>/kept", methods=["POST"])
+@jwt_required()
+def mark_promise_kept_route(promise_id):
+    actor_id = _current_user_id()
+    try:
+        promise = mark_promise_kept(promise_id, actor_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    return jsonify(promise_schema.dump(promise)), 200
