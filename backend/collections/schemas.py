@@ -36,3 +36,11 @@ class AgingClassificationSchema(Schema):
     days_overdue = fields.Int(dump_only=True)
     aging_bucket = fields.Str(dump_only=True)
     is_high_risk = fields.Bool(dump_only=True)
+
+class PromiseToPaySchema(Schema):
+    id = fields.Int(dump_only=True)
+    loan_id = fields.Int(dump_only=True)
+    logged_by_user_id = fields.Int(dump_only=True)
+    promised_date = fields.Date(dump_only=True)
+    status = fields.Str(dump_only=True, validate=validate.OneOf(PROMISE_STATUSES))
+    created_at = fields.DateTime(dump_only=True)
