@@ -88,3 +88,23 @@ def get_aging_bucket_route():
         "is_high_risk": is_high_risk(bucket, broken_promise_count),
     }
     return jsonify(aging_schema.dump(payload)), 200
+
+
+@collections_bp.route("/loans/<int:loan_id/promises",methods=["POST"])
+@jwt_required()
+def log_promise_route(loan_id):
+    try:
+        data=log_promise_schema.load(request.get_json() or {})
+    except ValidationError as err:
+        return jsonify({"errors":err.messages}),400
+
+    actor_id = _current_user_id()
+
+    try:
+        promise = log_promise_to_pay(
+            loan_id=loan_id, promised_date=data["promised_date"], actor_id=actor_id
+        )
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
+    return jsonify(promise_schema.dump(promise)), 201
