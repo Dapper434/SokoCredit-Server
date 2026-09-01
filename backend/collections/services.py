@@ -242,3 +242,10 @@ def mark_promise_broken(
 ) -> PromiseToPay:
     return _update_promise_status(promise_id,"broken",actor_id)
 
+def list_promises_for_loan(loan_id: int) -> list[PromiseToPay]:
+    get_loan(loan_id)  # institution check enforced internally
+    return (
+        PromiseToPay.query.filter_by(loan_id=loan_id)
+        .order_by(PromiseToPay.created_at.desc())
+        .all()
+    )
