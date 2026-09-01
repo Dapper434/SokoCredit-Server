@@ -29,3 +29,10 @@ class SendNotificationSchema(Schema):
 class LogPromiseToPaySchema(Schema):
     #Load schema for POST /loans/<id>/promises
     promised_date = fields.Date(required=True)
+
+class AgingClassificationSchema(Schema):
+    #Dump schema for the pure classify_aging_bucket()/is_high_risk() helpers.
+ 
+    days_overdue = fields.Int(dump_only=True)
+    aging_bucket = fields.Str(dump_only=True)
+    is_high_risk = fields.Bool(dump_only=True)
