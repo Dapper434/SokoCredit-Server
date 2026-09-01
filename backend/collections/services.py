@@ -149,3 +149,21 @@ def run_overdue_detection() -> None:
         "Servicing module not yet built (Phase 3). See docstring for the intended flow "
         "once servicing.services.get_overdue_schedules() exists."
     )
+
+def dispatch_receipt(
+    loan_id: int,
+    actor_id: Optional[int] = None
+) -> NotificationLog:
+    """
+    called by servicing to dispatch receipt
+    takes a loan_id and sends a receipt to that loan's customer
+    """
+    loan = get_loan(loan_id) #institution check enforced internally
+    return send_notification(
+        actor_id=actor_id if actor_id is not None else loan.customer_profile_id,
+        channel="sms",
+        message_type="receipt",
+        body=f"Payment received for loan #{loan.id}. Thank you.",
+        customer_profile_id=loan.customer_profile_id,
+        loan_id=loan.id,
+    )
