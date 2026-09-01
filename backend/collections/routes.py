@@ -22,3 +22,5 @@ from collections.services import (
     list_promises_for_loan,
 )
 from collections.notifications import NotificationDispatchError
+
+collections_bp = Blueprint("collections_communications", __name__, url_prefix="/api/collections")
