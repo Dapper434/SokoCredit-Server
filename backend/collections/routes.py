@@ -129,3 +129,14 @@ def mark_promise_kept_route(promise_id):
         return _auth_error_response(exc)
  
     return jsonify(promise_schema.dump(promise)), 200
+
+@collections_bp.route("/promises/<int:promise_id>/broken", methods=["POST"])
+@jwt_required()
+def mark_promise_broken_route(promise_id):
+    actor_id = _current_user_id()
+    try:
+        promise = mark_promise_broken(promise_id, actor_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    return jsonify(promise_schema.dump(promise)), 200
