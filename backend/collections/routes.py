@@ -72,3 +72,19 @@ def dispatch_receipt_route(loan_id):
         return jsonify({"error": str(exc)}), 502
  
     return jsonify(notification_log_schema.dump(entry)), 201
+
+@collections_bp.route("/aging-bucket", methods=["GET"])
+@jwt_required()
+def get_aging_bucket_route():
+    days_overdue = request.args.get("days_overdue", type=int)
+    broken_promise_count = request.args.get("broken_promise_count", default=0, type=int)
+    if days_overdue is None:
+        return jsonify({"error": "days_overdue query parameter is required."}), 400
+ 
+    bucket = classify_aging_bucket(days_overdue)
+    payload = {
+        "days_overdue": days_overdue,
+        "aging_bucket": bucket,
+        "is_high_risk": is_high_risk(bucket, broken_promise_count),
+    }
+    return jsonify(aging_schema.dump(payload)), 200
