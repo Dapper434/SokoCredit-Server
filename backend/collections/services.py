@@ -236,3 +236,9 @@ def mark_promise_kept(
     return _update_promise_status(promise_id,"kept",actor_id)
 
 
+def mark_promise_broken(
+    promise_id:int,
+    actor_id:int
+) -> PromiseToPay:
+    return _update_promise_status(promise_id,"broken",actor_id)
+
