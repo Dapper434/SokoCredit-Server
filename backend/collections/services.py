@@ -199,3 +199,31 @@ def log_promise_to_pay(
     )
 
     return promise
+
+def _update_promise_status(
+    promise_id: int,
+    new_status:str,
+    actor_id: int
+) -> PromiseToPay:
+    promise = db.session.get(PromiseToPay, promise_id)
+    if promise is None:
+        raise AuthError("No such promise.", 404)
+
+    loan = get_loan(promise.loan_id) #institution check enforced internally
+
+    before = {"status": promise.status}
+    promise.status = new_status
+
+    db.session.commit()
+
+    log_action(
+        actor_id=actor_id,
+        entity_type="PromiseToPay",
+        entity_id=promise.id,
+        action="update",
+        before=before,
+        after={"status": new_status},
+        lending_institution_id=loan.lending_institution_id,
+    )
+
+    return promise
