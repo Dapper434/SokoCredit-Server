@@ -167,3 +167,35 @@ def dispatch_receipt(
         customer_profile_id=loan.customer_profile_id,
         loan_id=loan.id,
     )
+
+
+
+# ------ Promise-to-pay lifecycle ---------
+
+def log_promise_to_pay(
+    loan_id:int,
+    promised_date,
+    actor_id:int
+) -> PromiseToPay:
+    loan = get_loan(loan_id) #institution check enforced internally
+
+    promise = PromiseToPay(
+        loan_id=loan.id,
+        logged_by_user_id=actor_id,
+        promised_date=promised_date,
+        status="pending",
+    )
+    db.session.add(promise)
+    db.session.commit()
+
+    log_action(
+        actor_id=actor_id,
+        entity_type="PromiseToPay",
+        entity_id=promise.id,
+        action="create",
+        before=None,
+        after={"loan_id": loan.id, "promised_date": str(promised_date)},
+        lending_institution_id=loan.lending_institution_id,
+    )
+
+    return promise
