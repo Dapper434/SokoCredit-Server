@@ -25,3 +25,7 @@ class SendNotificationSchema(Schema):
     recipient_user_id = fields.Int(required=False, allow_none=True)
     recipient_contact = fields.Str(required=False, allow_none=True)
     loan_id = fields.Int(required=False, allow_none=True)
+
+class LogPromiseToPaySchema(Schema):
+    #Load schema for POST /loans/<id>/promises
+    promised_date = fields.Date(required=True)
