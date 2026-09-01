@@ -108,3 +108,13 @@ def log_promise_route(loan_id):
         return _auth_error_response(exc)
 
     return jsonify(promise_schema.dump(promise)), 201
+
+@collections_bp.route("/loans/<int:loan_id>/promises", methods=["GET"])
+@jwt_required()
+def list_promises_route(loan_id):
+    try:
+        promises = list_promises_for_loan(loan_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    return jsonify(promise_schema.dump(promises, many=True)), 200
