@@ -58,3 +58,17 @@ def send_notification_route():
         return jsonify({"error":str(exc)}), 502
 
     return jsonify(notification_log_schema.dump(entry)), 201
+
+
+@collections_bp.route("/loans/<int:loan_id>/receipt", methods=["POST"])
+@jwt_required()
+def dispatch_receipt_route(loan_id):
+    actor_id = _current_user_id
+    try:
+        entry = dispatch_receipt(loan_id=loan_id, actor_id=actor_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+    except NotificationDispatchError as exc:
+        return jsonify({"error": str(exc)}), 502
+ 
+    return jsonify(notification_log_schema.dump(entry)), 201
