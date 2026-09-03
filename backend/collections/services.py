@@ -4,7 +4,7 @@ from extensions import db
 from foundations.auth import AuthError, get_user_institution_id, verify_institution_access
 from foundations.audit import log_action
 from origination.services import get_customer_profile
-from underwriting.services import get_loan
+from underwriting.services import get_loan, list_loans_for_institution
 
 from collections.models import NotificationLog, PromiseToPay, CHANNELS, MESSAGE_TYPES, utcnow
 from collections.notifications import dispatch, NotificationDispatchError
@@ -15,6 +15,42 @@ def _verify_staff_institution_access(user_id:int) -> None:
     if not institution_id:
         raise AuthError("No such staff user, ot user has no institution.", 400)
     verify_institution_access(user_id, institution_id)
+
+#------- notification aggregates --------
+
+def get_notification_summary(
+    actor_id: int,
+    since=None
+) -> dict:
+    """
+    for analytics/ reporting module
+    Institution scoping is done by first calling
+    underwriting.services.list_loans_for_institution() to get this
+    institution's loan_ids, then filtering NotificationLog against those
+    plain integers — NOT by importing or joining against Underwriting's
+    Loan model directly, which would violate the one rule.
+    """
+
+    loan_ids = [loan.id for loan in list_loans_for_institution(actor_id)]
+    if not loan_ids:
+        return {"total": 0, "by_channel": {}, "by_message_type": {}, "by_delivery_status": {}}
+ 
+    query = NotificationLog.query.filter(NotificationLog.loan_id.in_(loan_ids))
+    if since is not None:
+        query = query.filter(NotificationLog.sent_at >= since)
+    logs = query.all()
+ 
+    summary = {"total": len(logs), "by_channel": {}, "by_message_type": {}, "by_delivery_status": {}}
+    for entry in logs:
+        summary["by_channel"][entry.channel] = summary["by_channel"].get(entry.channel, 0) + 1
+        summary["by_message_type"][entry.message_type] = (
+            summary["by_message_type"].get(entry.message_type, 0) + 1
+        )
+        summary["by_delivery_status"][entry.delivery_status] = (
+            summary["by_delivery_status"].get(entry.delivery_status, 0) + 1
+        )
+ 
+    return summary
 
 #------- sending a notification ---------
 
