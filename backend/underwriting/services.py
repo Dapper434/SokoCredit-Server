@@ -402,6 +402,21 @@ def disburse_loan(
     if approval is None or approval.decision != "approved":
         raise AuthError("Loan must be approved before disbursment", 400)
 
+    """
+        from datetime import timedelta
+        from servicing.services import disburse_loan as servicing_disburse_loan
+        result = servicing_disburse_loan(loan_id=loan.id, principal=loan.principal)
+        loan.disbursed_at = result.disbursed_at
+        loan.maturity_date = result.disbursed_at.date() + timedelta(days=loan.term_days)
+        loan.status = "active"
+        db.session.commit()
+        log_action(
+         actor_id=actor_id, entity_type="Loan", entity_id=loan.id,
+         action="update", before={"status": "pending"},
+         after={"status": "active"},
+         lending_institution_id=loan.lending_institution_id
+        )
+    """
     raise NotImplementedError(
         "Servicing module not built yet."
     )
