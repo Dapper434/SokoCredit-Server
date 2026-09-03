@@ -52,6 +52,24 @@ def get_notification_summary(
  
     return summary
 
+def get_broken_promise_counts(actor_id: int) -> dict:
+    """
+    Maps loan_id -> count of broken promises, for this institution's
+    loans. Same scoping approach as get_notification_summary() — goes
+    through list_loans_for_institution() rather than a direct join.
+    """
+    loan_ids = [loan.id for loan in list_loans_for_institution(actor_id)]
+    if not loan_ids:
+        return {}
+ 
+    rows = (
+        db.session.query(PromiseToPay.loan_id, db.func.count(PromiseToPay.id))
+        .filter(PromiseToPay.loan_id.in_(loan_ids), PromiseToPay.status == "broken")
+        .group_by(PromiseToPay.loan_id)
+        .all()
+    )
+    return {loan_id: count for loan_id, count in rows}
+
 #------- sending a notification ---------
 
 def send_notification(
