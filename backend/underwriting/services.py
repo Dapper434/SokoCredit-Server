@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -103,7 +104,7 @@ def determine_and_recalculate_credit_score(
    )
 
     
-#Internal helpers
+#----------------Internal helpers---------------
 def _get_latest_approval(
     loan:Loan
 ) -> Optional[LoanApproval]:
@@ -114,7 +115,7 @@ def _get_latest_approval(
         .first()
     )
 
-#Reads
+#-----------------Reads--------------------
 
 def get_loan(
     loan_id:int
@@ -132,6 +133,36 @@ def list_loan_approvals(
     return (
        LoanApproval.query.filter_by(loan_id=loan.id).order_by(LoanApproval.maker_action_at.desc().all())
     )
+
+def get_loans_due(
+    actor_id: int,
+    only_mine:bool = True,
+    as_of_date=None
+) -> list[Loan]:
+    """
+    loan_officer visits this and views the current loans that are due
+    only_mine = True restricts loans to whose customer is currently assigned to actor_id
+    Due = active loans whose maturity_date has arrived or passed.
+    """
+    if as_of_date is None:
+        as_of_date = date.today()
+
+    institution_id = get_user_institution_id(actor_id)
+    if institution_id is None:
+        raise AuthError("No such staff user, or user has no institution.", 400)
+
+    candidates = Loan.query.filter(
+        Loan.lending_institution_id == institution_id,
+        Loan.status == "active",
+        Loan.maturity_date <= as_of_date
+    ).all()
+
+    if not only_mine:
+        return candidates
+
+    return [
+        loan for loan in candidates if get_customer_profile(loan.customer_profile_id).user_id == actor_id
+    ]
 
 #Maker-Checker Workflow
 #loan_officer creates loan manager/admin approves loan
