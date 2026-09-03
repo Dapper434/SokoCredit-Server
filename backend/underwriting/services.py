@@ -164,6 +164,20 @@ def get_loans_due(
         loan for loan in candidates if get_customer_profile(loan.customer_profile_id).user_id == actor_id
     ]
 
+def _get_loan_unscoped(loan_id:int) -> Loan:
+    """
+    system level fetch with no institution check via JWT
+    meant for webhooks with no jwt at all
+    """
+    loan = db.session.get(Loan,loan_id)
+    if loan is None:
+        raise AuthError("No such loan.", 404)
+    return loan
+ 
+
+
+
+
 #Maker-Checker Workflow
 #loan_officer creates loan manager/admin approves loan
 
