@@ -214,7 +214,26 @@ def mark_loan_defaulted(loan_id: int, actor_id: Optional[int] = None) -> Loan:
     )
     return loan
 
+
+def mark_loan_restructured(loan_id: int, actor_id: Optional[int] = None) -> Loan:
+    """
+    Called by Servicing once a reschedule_request is approved
+    (admin_decision == "approve") and actually applied.
+    """
+    loan = _get_loan_unscoped(loan_id)
+    if loan.status != "active":
+        raise AuthError(f"Cannot mark a loan as restructured from status '{loan.status}'.", 400)
  
+    before = {"status": loan.status}
+    loan.status = "restructured"
+    db.session.commit()
+ 
+    log_action(
+        actor_id=actor_id, entity_type="Loan", entity_id=loan.id, action="update",
+        before=before, after={"status": "restructured"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+    return loan
 
 
 
