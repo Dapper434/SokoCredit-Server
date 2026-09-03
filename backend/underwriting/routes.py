@@ -21,6 +21,8 @@ from underwriting.services import (
     disburse_loan,
     get_available_credit,
     recalculate_credit_score,
+    get_loans_due,
+    list_loans_for_institution,
     get_loan as fetch_loan,
     list_loan_approvals as fetch_loan_approvals,
 )
@@ -167,3 +169,48 @@ def recalculate_credit_score_route(customer_profile_id):
         return _auth_error_response(exc)
  
     return jsonify(credit_score_log_schema.dump(entry)), 201
+
+@underwriting_bp.route("/loans/due/mine", methods=["GET"])
+@jwt_required()
+def get_my_due_loans_route():
+    #shows an authenticated user's assigned customers' due loans
+    actor_id = _current_user_id()
+    try:
+        loans = get_loans_due(actor_id=actor_id, only_mine=True)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    return jsonify(loan_schema.dump(loans, many=True)), 200
+
+
+@underwriting_bp.route("/loans/due/institution", methods=["GET"])
+@permission_required("reports:view")
+def get_institution_due_loans_route():
+    #granted to admins and super-admins
+    #view institution wide due loans
+    actor_id = _current_user_id()
+    try:
+        loans = get_loans_due(actor_id=actor_id, only_mine=False)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    return jsonify(loan_schema.dump(loans, many=True)), 200
+
+
+@underwriting_bp.route("/loans", methods=["GET"])
+@permission_required("reports:view")
+def list_institution_loans_route():
+    """
+    Full portfolio, not just due loans — for Analytics/reporting use
+    (GLP, PAR, portfolio composition). Same "reports:view" gate as the
+    due-loans institution route, since this is also institution-wide
+    oversight data, not a single officer's own worklist.
+    """
+    status_filter = request.args.get("status")
+    actor_id = _current_user_id()
+    try:
+        loans = list_loans_for_institution(actor_id=actor_id, status_filter=status_filter)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+ 
+    return jsonify(loan_schema.dump(loans, many=True)), 200

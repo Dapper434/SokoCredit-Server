@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -8,6 +9,7 @@ from origination.services import set_credit_tier, get_customer_profile
 from underwriting.scoring import compute_credit_tier
 
 from underwriting.models import (
+    LOAN_STATUSES,
     Loan,
     LoanApproval,
     SavingsAccount,
@@ -103,7 +105,7 @@ def determine_and_recalculate_credit_score(
    )
 
     
-#Internal helpers
+#----------------Internal helpers---------------
 def _get_latest_approval(
     loan:Loan
 ) -> Optional[LoanApproval]:
@@ -114,7 +116,7 @@ def _get_latest_approval(
         .first()
     )
 
-#Reads
+#-----------------Reads--------------------
 
 def get_loan(
     loan_id:int
@@ -132,6 +134,132 @@ def list_loan_approvals(
     return (
        LoanApproval.query.filter_by(loan_id=loan.id).order_by(LoanApproval.maker_action_at.desc().all())
     )
+
+def get_loans_due(
+    actor_id: int,
+    only_mine:bool = True,
+    as_of_date=None
+) -> list[Loan]:
+    """
+    loan_officer visits this and views the current loans that are due
+    only_mine = True restricts loans to whose customer is currently assigned to actor_id
+    Due = active loans whose maturity_date has arrived or passed.
+    """
+    if as_of_date is None:
+        as_of_date = date.today()
+
+    institution_id = get_user_institution_id(actor_id)
+    if institution_id is None:
+        raise AuthError("No such staff user, or user has no institution.", 400)
+
+    candidates = Loan.query.filter(
+        Loan.lending_institution_id == institution_id,
+        Loan.status == "active",
+        Loan.maturity_date <= as_of_date
+    ).all()
+
+    if not only_mine:
+        return candidates
+
+    return [
+        loan for loan in candidates if get_customer_profile(loan.customer_profile_id).user_id == actor_id
+    ]
+
+def _get_loan_unscoped(loan_id:int) -> Loan:
+    """
+    system level fetch with no institution check via JWT
+    meant for webhooks with no jwt at all
+    """
+    loan = db.session.get(Loan,loan_id)
+    if loan is None:
+        raise AuthError("No such loan.", 404)
+    return loan
+
+def mark_loan_fully_paid(
+    loan_id:int,
+    actor_id: Optional[int] = None
+) -> Loan:
+    #called by servicing once a loan is fully paid
+    loan = _get_loan_unscoped(loan_id)
+    if loan.status != "active":
+        raise AuthError(f"Cannot mark a loan as fully_paid from status '{loan.status}'.", 400)
+
+    before = {"status": loan.status}
+    loan.status = "fully_paid"
+    db.session.commit()
+
+    log_action(
+        actor_id=actor_id, entity_type="Loan", entity_id=loan.id, action="update",
+        before=before, after={"status": "fully_paid"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+
+    return loan
+
+def mark_loan_defaulted(loan_id: int, actor_id: Optional[int] = None) -> Loan:
+    """
+    Called by Servicing once its own default-detection logic flags a loan.
+    """
+    loan = _get_loan_unscoped(loan_id)
+    if loan.status not in ("active", "restructured"):
+        raise AuthError(f"Cannot mark a loan as defaulted from status '{loan.status}'.", 400)
+ 
+    before = {"status": loan.status}
+    loan.status = "defaulted"
+    db.session.commit()
+ 
+    log_action(
+        actor_id=actor_id, entity_type="Loan", entity_id=loan.id, action="update",
+        before=before, after={"status": "defaulted"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+    return loan
+
+
+def mark_loan_restructured(loan_id: int, actor_id: Optional[int] = None) -> Loan:
+    """
+    Called by Servicing once a reschedule_request is approved
+    (admin_decision == "approve") and actually applied.
+    """
+    loan = _get_loan_unscoped(loan_id)
+    if loan.status != "active":
+        raise AuthError(f"Cannot mark a loan as restructured from status '{loan.status}'.", 400)
+ 
+    before = {"status": loan.status}
+    loan.status = "restructured"
+    db.session.commit()
+ 
+    log_action(
+        actor_id=actor_id, entity_type="Loan", entity_id=loan.id, action="update",
+        before=before, after={"status": "restructured"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+    return loan
+
+def list_loans_for_institution(
+    actor_id:int,
+    status_filter:Optional[str] = None
+) -> list[Loan]:
+    """
+     for analytics and reporting collections' aggregate summaries
+     gives every loan in the callers own institution
+     isn't restricted by status
+     full book needed for portfolio-wide metrics like GLP and PAR
+    """
+
+    institution_id = get_user_institution_id(actor_id)
+    if institution_id is None:
+        raise AuthError("No such staff user, or user has no institution.", 400)
+
+    if status_filter is not None and status_filter not in LOAN_STATUSES:
+        raise AuthError(f"Invalid status filter '{status_filter}'", 400)
+
+    query = Loan.query.filter_by(lending_institution_id=institution_id)
+    if status_filter is not None:
+        query = query.filter_by(status=status_filter)
+    return query.all()
+
+
 
 #Maker-Checker Workflow
 #loan_officer creates loan manager/admin approves loan
@@ -274,6 +402,21 @@ def disburse_loan(
     if approval is None or approval.decision != "approved":
         raise AuthError("Loan must be approved before disbursment", 400)
 
+    """
+        from datetime import timedelta
+        from servicing.services import disburse_loan as servicing_disburse_loan
+        result = servicing_disburse_loan(loan_id=loan.id, principal=loan.principal)
+        loan.disbursed_at = result.disbursed_at
+        loan.maturity_date = result.disbursed_at.date() + timedelta(days=loan.term_days)
+        loan.status = "active"
+        db.session.commit()
+        log_action(
+         actor_id=actor_id, entity_type="Loan", entity_id=loan.id,
+         action="update", before={"status": "pending"},
+         after={"status": "active"},
+         lending_institution_id=loan.lending_institution_id
+        )
+    """
     raise NotImplementedError(
         "Servicing module not built yet."
     )
