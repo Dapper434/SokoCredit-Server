@@ -152,3 +152,10 @@ def notification_summary_route():
     actor_id = _current_user_id()
     summary = get_notification_summary(actor_id)
     return jsonify(summary), 200
+
+@collections_bp.route("/promises/broken-counts", methods=["GET"])
+@permission_required("reports:view")
+def broken_promise_counts_route():
+    actor_id = _current_user_id()
+    counts = get_broken_promise_counts(actor_id)
+    return jsonify(counts), 200
