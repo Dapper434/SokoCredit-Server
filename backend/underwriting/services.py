@@ -195,6 +195,25 @@ def mark_loan_fully_paid(
 
     return loan
 
+def mark_loan_defaulted(loan_id: int, actor_id: Optional[int] = None) -> Loan:
+    """
+    Called by Servicing once its own default-detection logic flags a loan.
+    """
+    loan = _get_loan_unscoped(loan_id)
+    if loan.status not in ("active", "restructured"):
+        raise AuthError(f"Cannot mark a loan as defaulted from status '{loan.status}'.", 400)
+ 
+    before = {"status": loan.status}
+    loan.status = "defaulted"
+    db.session.commit()
+ 
+    log_action(
+        actor_id=actor_id, entity_type="Loan", entity_id=loan.id, action="update",
+        before=before, after={"status": "defaulted"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+    return loan
+
  
 
 
