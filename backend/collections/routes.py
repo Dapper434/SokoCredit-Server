@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from marshmallow import ValidationError
  
-from foundations.auth import AuthError
+from foundations.auth import AuthError, permission_required
  
 from collections.schemas import (
     NotificationLogSchema,
@@ -20,6 +20,8 @@ from collections.services import (
     mark_promise_kept,
     mark_promise_broken,
     list_promises_for_loan,
+    get_notification_summary,
+    get_broken_promise_counts,
 )
 from collections.notifications import NotificationDispatchError
 
@@ -140,3 +142,13 @@ def mark_promise_broken_route(promise_id):
         return _auth_error_response(exc)
  
     return jsonify(promise_schema.dump(promise)), 200
+
+@collections_bp.route("/notifications/summary", methods=["GET"])
+@permission_required("reports:view")
+def notification_summary_route():
+    """
+    For Analytics/reporting. Only counts loan-linked notifications
+    """
+    actor_id = _current_user_id()
+    summary = get_notification_summary(actor_id)
+    return jsonify(summary), 200
