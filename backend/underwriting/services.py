@@ -173,6 +173,28 @@ def _get_loan_unscoped(loan_id:int) -> Loan:
     if loan is None:
         raise AuthError("No such loan.", 404)
     return loan
+
+def mark_loan_fully_paid(
+    loan_id:int,
+    actor_id: Optional[int] = None
+) -> Loan:
+    #called by servicing once a loan is fully paid
+    loan = _get_loan_unscoped(loan_id)
+    if loan.status != "active":
+        raise AuthError(f"Cannot mark a loan as fully_paid from status '{loan.status}'.", 400)
+
+    before = {"status": loan.status}
+    loan.status = "fully_paid"
+    db.session.commit()
+
+    log_action(
+        actor_id=actor_id, entity_type="Loan", entity_id=loan.id, action="update",
+        before=before, after={"status": "fully_paid"},
+        lending_institution_id=loan.lending_institution_id,
+    )
+
+    return loan
+
  
 
 
