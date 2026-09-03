@@ -1,7 +1,7 @@
 """
 ROLES:
 password hashing, creating users/ orgs
-loggin in, enforcing permissions, and
+logging in, enforcing permissions, and
 issuing tokens
 """
 
@@ -191,3 +191,11 @@ def get_user_institution_id(user_id:int) -> Optional[int]:
     #without importing foundations.models.User directly
     user = db.session.get(User, user_id)
     return user.lending_institution_id if user else None
+
+def get_user_contact_info(user_id: int) -> Optional[dict]:
+    # lets other modules resolve a staff member's contact details
+    # without importing foundations.models.User directly
+    user = db.session.get(User, user_id)
+    if user is None:
+        return None
+    return {"email": user.email, "phone_number": user.phone_number}
