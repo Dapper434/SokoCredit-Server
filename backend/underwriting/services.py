@@ -9,6 +9,7 @@ from origination.services import set_credit_tier, get_customer_profile
 from underwriting.scoring import compute_credit_tier
 
 from underwriting.models import (
+    LOAN_STATUSES,
     Loan,
     LoanApproval,
     SavingsAccount,
@@ -235,6 +236,28 @@ def mark_loan_restructured(loan_id: int, actor_id: Optional[int] = None) -> Loan
     )
     return loan
 
+def list_loans_for_institution(
+    actor_id:int,
+    status_filter:Optional[str] = None
+) -> list[Loan]:
+    """
+     for analytics and reporting collections' aggregate summaries
+     gives every loan in the callers own institution
+     isn't restricted by status
+     full book needed for portfolio-wide metrics like GLP and PAR
+    """
+
+    institution_id = get_user_institution_id(actor_id)
+    if institution_id is None:
+        raise AuthError("No such staff user, or user has no institution.", 400)
+
+    if status_filter is not None and status_filter not in LOAN_STATUSES:
+        raise AuthError(f"Invalid status filter '{status_filter}'", 400)
+
+    query = Loan.query.filter_by(lending_institution_id=institution_id)
+    if status_filter is not None:
+        query = query.filter_by(status=status_filter)
+    return query.all()
 
 
 
