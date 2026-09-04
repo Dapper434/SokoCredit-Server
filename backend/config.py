@@ -13,7 +13,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", f"sqlite:///{os.path.join(base_dir, 'instance' ,'sokocredit.db')}"
+        "DATABASE_URL", f"sqlite:///{os.path.join(base_dir, 'sokocredit.db')}"
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -32,11 +32,16 @@ class Config:
         if origin.strip()
     ]
 
+    # Supabase storage — used by the Collections/KYC document flow
+    # (foundations.storage). Optional: unset means server-side document upload
+    # is disabled and callers fall back to the file_url strategy.
     SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
     SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     SUPABASE_STORAGE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "documents")
     SIGNED_URL_EXPIRES_IN_SECONDS = int(os.environ.get("SIGNED_URL_EXPIRES_IN_SECONDS", "300"))
 
+    # Twilio — Collections/Communications SMS + WhatsApp (communications.notifications).
+    # Optional: unset means notification dispatch is disabled.
     TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
     TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
     TWILIO_SMS_FROM_NUMBER = os.environ.get("TWILIO_SMS_FROM_NUMBER", "")

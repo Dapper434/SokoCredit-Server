@@ -34,6 +34,7 @@ class InstitutionRegistrationSchema(Schema):
     bank_name = fields.Str(required=False, allow_none=True)
     bank_account_number = fields.Str(required=False, allow_none=True)
     collection_paybill_number = fields.Str(required=False, validate=validate.Length(min=2, max=20)) 
+    airtel_paybill_number = fields.Str(required=False, allow_none=True, validate=validate.Length(max=20))
     default_interest_rate = fields.Float(required=False, allow_none=True)
     default_penalty_rate = fields.Float(required=False, allow_none=True)
 
@@ -65,6 +66,33 @@ class UserSchema(Schema):
     status = fields.Str(dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     last_login_at = fields.DateTime(dump_only=True, allow_none=True)
+
+class InstitutionSettingsSchema(Schema):
+    id = fields.Int(dump_only=True)
+    registered_business_name = fields.Str(dump_only=True)
+    collection_paybill_number = fields.Str(dump_only=True, allow_none=True)
+    airtel_paybill_number = fields.Str(dump_only=True, allow_none=True)
+    default_interest_rate = fields.Decimal(as_string=True, dump_only=True, allow_none=True)
+    default_penalty_rate = fields.Decimal(as_string=True, dump_only=True, allow_none=True)
+    status = fields.Str(dump_only=True)
+
+
+class InstitutionSettingRequestCreateSchema(Schema):
+    field_changed = fields.Str(required=True)
+    new_value = fields.Str(required=True)
+
+
+class InstitutionSettingRequestSchema(Schema):
+    id = fields.Int(dump_only=True)
+    lending_institution_id = fields.Int(dump_only=True)
+    requested_by_user_id = fields.Int(dump_only=True)
+    field_changed = fields.Str(dump_only=True)
+    old_value = fields.Str(dump_only=True, allow_none=True)
+    new_value = fields.Str(dump_only=True)
+    approved_by_user_id = fields.Int(dump_only=True, allow_none=True)
+    status = fields.Str(dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
+
 
 class LendingInstitutionSchema(Schema):
     id = fields.Int(dump_only=True)

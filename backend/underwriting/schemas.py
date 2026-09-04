@@ -25,6 +25,13 @@ class LoanSchema(Schema):
     maturity_date = fields.Date(dump_only=True, allow_none=True)
     created_at = fields.DateTime(dump_only=True) 
 
+class LoanApplicationSchema(Schema):
+    principal = fields.Decimal(as_string=True, required=True, validate=validate.Range(min=0.01))
+    term_days = fields.Int(required=True, validate=validate.Range(min=1))
+    repayment_frequency = fields.Str(
+        required=True, validate=validate.OneOf(REPAYMENT_FREQUENCIES)
+    )
+    loan_purpose = fields.Str(required=False, allow_none=True)
 
 class LoanProposalSchema(Schema):
     customer_profile_id = fields.Int(required=True)
@@ -65,12 +72,8 @@ class CreditScoreLogSchema(Schema):
     calculated_at = fields.DateTime(dump_only=True)
 
 class CreditScoreRecalculateSchema(Schema):
-    on_time_rate = fields.Decimal(
-        as_string=True, required=True, validate=validate.Range(min=0, max=1)
-    )
-    completed_loan_cycles = fields.Int(required=True, validate=validate.Range(min=0))
-    has_defaulted_loan = fields.Bool(required=True)
-    reschedule_count = fields.Int(required=True, validate=validate.Range(min=0))
+    new_tier = fields.Str(required=True, validate=validate.OneOf(CREDIT_TIERS))
+    score_components = fields.Dict(required=False, allow_none=True)
 
 class AvailableCreditSchema(Schema):
     customer_profile_id = fields.Int(dump_only=True)

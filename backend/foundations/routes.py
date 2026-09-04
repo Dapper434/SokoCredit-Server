@@ -9,10 +9,19 @@ from foundations.auth import (
     issue_tokens,
     get_current_user,
     role_required,
-    verify_institution_access
+    verify_institution_access,
 )
 
-from foundations.institutions import register_institution, attach_document, add_market, get_document_download_url
+from foundations.institutions import (
+    register_institution,
+    attach_document,
+    add_market,
+    get_institution_settings,
+    request_setting_change,
+    approve_setting_change,
+    list_setting_requests,
+    get_document_download_url,
+)
 
 from foundations.schemas import (
     InstitutionRegistrationSchema,
@@ -20,6 +29,9 @@ from foundations.schemas import (
     LoginSchema,
     UserSchema,
     LendingInstitutionSchema,
+    InstitutionSettingsSchema,
+    InstitutionSettingRequestCreateSchema,
+    InstitutionSettingRequestSchema,
 )
 
 foundation_bp = Blueprint("foundation", __name__)
@@ -29,7 +41,7 @@ institution_schema = LendingInstitutionSchema()
 
 @foundation_bp.errorhandler(AuthError)
 def handle_auth_error(err: AuthError):
-    return jsonify({"error": err.message}), err.status_code
+    return jsonify({"status": "error", "message": err.message}), err.status_code
 
 @foundation_bp.errorhandler(ValidationError)
 def handle_validation_error(err: ValidationError):
@@ -49,30 +61,46 @@ def signup_organization():
     return jsonify({
         "institution": institution_schema.dump(institution),
         "user": user_schema.dump(admin),
+        "role": admin.role,
         **tokens,
     }), 201
 
 @foundation_bp.post("/institutions/<int:institution_id>/documents")
 @jwt_required()
 def upload_document(institution_id):
+    """Attach a compliance document.
+
+    multipart/form-data with a `file` field  -> server-side Supabase upload
+    application/json with `file_url`          -> metadata-only (client uploaded)
+    """
     actor = get_current_user()
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in the request."}), 400
-    file = request.files["file"]
-    document_type = request.form.get("document_type")
-    if not document_type:
-        return jsonify({"error": "document_type is required."}), 400
- 
-    file_bytes = file.read()
-    doc = attach_document(
-        lending_institution_id=institution_id,
-        document_type=document_type,
-        file_bytes=file_bytes,
-        content_type=file.content_type,
-        original_filename=file.filename,
-        uploaded_by=actor.id,
-    )
-    return jsonify({"id": doc.id, "document_type": doc.document_type}), 201
+
+    if "file" in request.files:
+        file = request.files["file"]
+        document_type = request.form.get("document_type")
+        if not document_type:
+            return jsonify({"error": "document_type is required."}), 400
+        doc = attach_document(
+            lending_institution_id=institution_id,
+            document_type=document_type,
+            file_bytes=file.read(),
+            content_type=file.content_type,
+            original_filename=file.filename,
+            uploaded_by=actor.id,
+        )
+    else:
+        body = request.get_json() or {}
+        doc = attach_document(
+            lending_institution_id=institution_id,
+            document_type=body.get("document_type"),
+            file_url=body.get("file_url"),
+            uploaded_by=actor.id,
+        )
+    return jsonify({
+        "id": doc.id, "document_type": doc.document_type,
+        "file_url": doc.file_url, "storage_path": doc.storage_path,
+    }), 201
+
 
 @foundation_bp.get("/institutions/<int:institution_id>/documents/<int:document_id>/download")
 @jwt_required()
@@ -81,12 +109,24 @@ def download_document(institution_id, document_id):
     url = get_document_download_url(document_id, institution_id)
     return jsonify({"url": url}), 200
 
-@foundation_bp.post("/login")
+@foundation_bp.post("/lender/login")
 def login():
     data = LoginSchema().load(request.get_json() or {})
     user = authenticate_user(data["email"], data["password"])
     tokens = issue_tokens(user)
-    return jsonify({"user": user_schema.dump(user), **tokens}), 200
+    
+    return jsonify({
+        "status": "success",
+        "token": tokens["access_token"],
+        "user": {
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "role": user.role,
+            "institution_id": user.lending_institution_id,
+            "institution_name": user.lending_institution.registered_business_name if user.lending_institution else None
+        }
+    }), 200
 
 
 #Exchange a refresh token for a new access token.
@@ -110,7 +150,7 @@ def me():
 
 #Add another staff member to the caller's own organization.
 @foundation_bp.post("/users")
-@role_required("admin", "super_admin")
+@role_required("branch_manager")
 def add_teammate():
     
     data = RegisterUserSchema().load(request.get_json() or {})
@@ -126,3 +166,101 @@ def add_teammate():
         actor_id=actor.id,
     )
     return jsonify(user_schema.dump(new_user)), 201
+
+# Get all staff members for the caller's organization
+@foundation_bp.get("/users")
+@role_required("branch_manager")
+def get_teammates():
+    from foundations.models import User
+    actor = get_current_user()
+    users = User.query.filter(
+        User.lending_institution_id == actor.lending_institution_id,
+        User.role.in_(['branch_manager', 'loan_officer'])
+    ).all()
+    return jsonify(user_schema.dump(users, many=True)), 200
+
+
+@foundation_bp.patch("/users/<int:user_id>/status")
+@role_required("branch_manager")
+def update_teammate_status(user_id):
+    from foundations.models import User
+    from extensions import db
+    actor = get_current_user()
+    
+    user = db.session.get(User, user_id)
+    if not user or user.lending_institution_id != actor.lending_institution_id:
+        return jsonify({"message": "User not found"}), 404
+        
+    data = request.get_json() or {}
+    new_status = data.get("status")
+    
+    if new_status not in ["active", "suspended"]:
+        return jsonify({"message": "Invalid status"}), 400
+        
+    user.status = new_status
+    db.session.commit()
+    
+    return jsonify(user_schema.dump(user)), 200
+
+@foundation_bp.post("/users/<int:user_id>/edit-request")
+@role_required("branch_manager")
+def submit_teammate_edit_request(user_id):
+    from foundations.models import User
+    from extensions import db
+    actor = get_current_user()
+    
+    user = db.session.get(User, user_id)
+    if not user or user.lending_institution_id != actor.lending_institution_id:
+        return jsonify({"message": "User not found"}), 404
+        
+    # In a real app, this would create an InstitutionChangeRequest or similar model.
+    # For now, it simulates success as requested.
+    return jsonify({
+        "message": "SokoCredit Team will review the request and reach out to confirm."
+    }), 200
+
+
+institution_settings_schema = InstitutionSettingsSchema()
+setting_request_create_schema = InstitutionSettingRequestCreateSchema()
+setting_request_schema = InstitutionSettingRequestSchema()
+
+
+@foundation_bp.get("/institution-settings")
+@role_required("branch_manager")
+def get_settings():
+    actor = get_current_user()
+    institution = get_institution_settings(actor.lending_institution_id)
+    return jsonify(institution_settings_schema.dump(institution)), 200
+
+
+@foundation_bp.get("/institution-setting-requests")
+@role_required("branch_manager")
+def list_settings_requests():
+    actor = get_current_user()
+    status = request.args.get("status")
+    rows = list_setting_requests(actor.lending_institution_id, status=status)
+    return jsonify(setting_request_schema.dump(rows, many=True)), 200
+
+
+@foundation_bp.post("/institution-setting-requests")
+@role_required("branch_manager")
+def create_setting_request():
+    data = setting_request_create_schema.load(request.get_json() or {})
+    actor = get_current_user()
+    req = request_setting_change(
+        lending_institution_id=actor.lending_institution_id,
+        requested_by_user_id=actor.id,
+        field_changed=data["field_changed"],
+        new_value=data["new_value"],
+    )
+    return jsonify(setting_request_schema.dump(req)), 201
+
+
+@foundation_bp.post("/institution-setting-requests/<int:request_id>/approve")
+@role_required("branch_manager")
+def approve_setting_request(request_id):
+    actor = get_current_user()
+    req = approve_setting_change(request_id=request_id, approver_id=actor.id)
+    if req.lending_institution_id != actor.lending_institution_id:
+        return jsonify({"error": "This resource does not belong to your organization."}), 403
+    return jsonify(setting_request_schema.dump(req)), 200
