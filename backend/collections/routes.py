@@ -157,5 +157,9 @@ def notification_summary_route():
 @permission_required("reports:view")
 def broken_promise_counts_route():
     actor_id = _current_user_id()
-    counts = get_broken_promise_counts(actor_id)
+    try:
+        counts = get_broken_promise_counts(actor_id)
+    except AuthError as exc:
+        return _auth_error_response(exc)
+    
     return jsonify(counts), 200
