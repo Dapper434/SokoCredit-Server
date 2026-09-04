@@ -6,8 +6,8 @@ from foundations.audit import log_action
 from origination.services import get_customer_profile
 from underwriting.services import get_loan, list_loans_for_institution
 
-from collections.models import NotificationLog, PromiseToPay, CHANNELS, MESSAGE_TYPES, utcnow
-from collections.notifications import dispatch, NotificationDispatchError
+from communications.models import NotificationLog, PromiseToPay, CHANNELS, MESSAGE_TYPES, utcnow
+from communications.notifications import dispatch, NotificationDispatchError
 
 def _verify_staff_institution_access(user_id:int) -> None:
     #institution check, makes sure staff has access to their own institution

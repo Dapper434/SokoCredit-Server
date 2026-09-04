@@ -4,14 +4,14 @@ from marshmallow import ValidationError
  
 from foundations.auth import AuthError, permission_required
  
-from collections.schemas import (
+from communications.schemas import (
     NotificationLogSchema,
     SendNotificationSchema,
     PromiseToPaySchema,
     LogPromiseToPaySchema,
     AgingClassificationSchema,
 )
-from collections.services import (
+from communications.services import (
     send_notification,
     classify_aging_bucket,
     is_high_risk,
@@ -23,7 +23,7 @@ from collections.services import (
     get_notification_summary,
     get_broken_promise_counts,
 )
-from collections.notifications import NotificationDispatchError
+from communications.notifications import NotificationDispatchError
 
 collections_bp = Blueprint("collections_communications", __name__, url_prefix="/api/collections")
 
@@ -92,7 +92,7 @@ def get_aging_bucket_route():
     return jsonify(aging_schema.dump(payload)), 200
 
 
-@collections_bp.route("/loans/<int:loan_id/promises",methods=["POST"])
+@collections_bp.route("/loans/<int:loan_id>/promises", methods=["POST"])
 @jwt_required()
 def log_promise_route(loan_id):
     try:

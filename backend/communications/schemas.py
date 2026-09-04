@@ -1,6 +1,6 @@
 from marshmallow import Schema, fields, validate
 
-from collections.models import CHANNELS, MESSAGE_TYPES, DELIVERY_STATUSES, PROMISE_STATUSES
+from communications.models import CHANNELS, MESSAGE_TYPES, DELIVERY_STATUSES, PROMISE_STATUSES
 
 class NotificationLogSchema(Schema):
     id = fields.Int(dump_only=True)

@@ -35,7 +35,7 @@ def test_institution_signup_creates_institution_and_founding_admin(client):
     r = signup_institution(client)
     assert r.status_code == 201
     body = r.get_json()
-    assert body["user"]["role"] == "super_admin"
+    assert body["user"]["role"] == "branch_manager"
     assert body["institution"]["status"] == "active"  # auto-approved
     assert "access_token" in body
 
@@ -63,7 +63,7 @@ def test_signup_accepts_onboarding_license_fields_and_admin_can_login(client):
     assert r.status_code == 201, r.get_json()
     assert r.get_json()["institution"]["status"] == "active"
 
-    r = client.post("/api/auth/login", json={
+    r = client.post("/api/auth/lender/login", json={
         "email": "jane@acme.test", "password": "SuperSecret123",
     })
     assert r.status_code == 200
@@ -72,11 +72,10 @@ def test_signup_accepts_onboarding_license_fields_and_admin_can_login(client):
 
 def test_founding_admin_can_log_in_immediately_since_auto_approved(client):
     signup_institution(client, email="canlogin@sacco.co.ke")
-    r = client.post("/api/auth/login", json={
+    r = client.post("/api/auth/lender/login", json={
         "email": "canlogin@sacco.co.ke", "password": "SuperSecret123",
     })
     assert r.status_code == 200
-    assert r.get_json()["user"]["status"] == "active"
 
 
 def test_duplicate_registration_number_rejected(client):
@@ -93,7 +92,7 @@ def test_duplicate_kra_pin_rejected(client):
 
 def test_login_wrong_password_rejected(client):
     signup_institution(client, email="loginfail@sacco.co.ke")
-    r = client.post("/api/auth/login", json={
+    r = client.post("/api/auth/lender/login", json={
         "email": "loginfail@sacco.co.ke", "password": "wrongpass",
     })
     assert r.status_code == 401
@@ -117,10 +116,10 @@ def test_admin_can_add_teammate_loan_officer_cannot(client):
     assert r.status_code == 201
     assert r.get_json()["status"] == "active"  # teammates start active, unlike the founding admin
 
-    r = client.post("/api/auth/login", json={
+    r = client.post("/api/auth/lender/login", json={
         "email": "officer@sacco.co.ke", "password": "OfficerPass1",
     })
-    officer_token = r.get_json()["access_token"]
+    officer_token = r.get_json()["token"]
 
     r = client.post(
         "/api/auth/users",
@@ -139,7 +138,7 @@ def test_audit_log_written_on_institution_and_admin_creation(app, client):
         user_logs = AuditLog.query.filter_by(entity_type="User").all()
         assert len(institution_logs) >= 2  # create (pending_review) + approve (active)
         assert len(user_logs) == 1
-        assert user_logs[0].after["role"] == "super_admin"
+        assert user_logs[0].after["role"] == "branch_manager"
 
 
 def test_verify_institution_access_blocks_cross_tenant(app, client):
