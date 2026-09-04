@@ -37,6 +37,11 @@ class Config:
     SUPABASE_STORAGE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "documents")
     SIGNED_URL_EXPIRES_IN_SECONDS = int(os.environ.get("SIGNED_URL_EXPIRES_IN_SECONDS", "300"))
 
+    TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    TWILIO_SMS_FROM_NUMBER = os.environ.get("TWILIO_SMS_FROM_NUMBER", "")
+    TWILIO_WHATSAPP_FROM_NUMBER = os.environ.get("TWILIO_WHATSAPP_FROM_NUMBER", "")
+
 class DevelopmentConfig(Config):
     DEBUG = True
 
