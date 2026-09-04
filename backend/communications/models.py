@@ -71,7 +71,7 @@ class PromiseToPay(db.Model):
     __table_args__ = (
         db.CheckConstraint(
             f"status IN {PROMISE_STATUSES}", name="ck_promise_to_pay_status_valid"
-        )
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
