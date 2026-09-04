@@ -23,12 +23,13 @@ def create_app(config_name : str = None) -> Flask:
     mail.init_app(app)
     jwt.init_app(app)
     cors.init_app(app,origins=app.config["CORS_ORIGINS"], supports_credentials=True)
-    mail.init_app(app)
 
     """import models here to avoid circular imports, and to ensure they are registered with SQLAlchemy"""
     from foundations import models as foundation_models
     from origination import models as origination_models
     from underwriting import models as underwriting_models
+    from servicing import models as servicing_models
+    from communications import models as communications_models
 
     from foundations.routes import foundation_bp
     app.register_blueprint(foundation_bp, url_prefix="/api/auth")
@@ -38,6 +39,20 @@ def create_app(config_name : str = None) -> Flask:
 
     from underwriting.routes import underwriting_bp
     app.register_blueprint(underwriting_bp, url_prefix="/api/underwriting")
+
+    from servicing.routes import servicing_bp
+    app.register_blueprint(servicing_bp, url_prefix="/api/servicing")
+
+    from analytics.routes import analytics_bp
+    app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
+
+    # Collections & Communications (teammate module). Optional third-party deps
+    # (twilio); if unavailable, the module simply does not register.
+    try:
+        from communications.routes import collections_bp
+        app.register_blueprint(collections_bp)
+    except ImportError as exc:
+        app.logger.warning("Collections module not loaded: %s", exc)
 
     from foundations.auth import register_jwt_callbacks
     register_jwt_callbacks(jwt)

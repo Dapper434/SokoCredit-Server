@@ -1,13 +1,14 @@
 """
 ROLES:
 password hashing, creating users/ orgs
-logging in, enforcing permissions, and
+loggin in, enforcing permissions, and
 issuing tokens
 """
 
 from datetime import datetime, timezone
 from functools import wraps
 from typing import Optional
+import re
 
 import bcrypt
 from flask import jsonify
@@ -21,7 +22,7 @@ from flask_jwt_extended import (
 )
 
 from extensions import db
-from foundations.models import User, ROLES
+from foundations.models import User, ROLES, LendingInstitution
 from foundations.audit import log_action
 
 """
@@ -53,17 +54,39 @@ def register_user(
     status: str = "active",
     phone_number: Optional[str] = None,
     national_id_number: Optional[str] = None,
+    branch_id: Optional[int] = None,
+    is_founding_admin: bool = False,
 ) -> User:
     #creates a user under an existing institution
     if role not in ROLES:
      raise AuthError(f"Invalid role '{role}'. Must be one of {ROLES}.", 400)
 
-    if User.query.filter_by(email=email.lower().strip()).first():
-        raise AuthError ("A user with this email already exists.", 409)
+    email = email.lower().strip()
+
+    if role in ("branch_manager", "loan_officer") and not is_founding_admin:
+        inst = db.session.get(LendingInstitution, lending_institution_id)
+        if not inst:
+            raise AuthError("Invalid institution.", 400)
+            
+        pattern = r"^(?P<first>[a-z]+)\.(?P<last>[a-z]+)@(?P<subdomain>bm|lo)\.(?P<root_domain>[a-z0-9.-]+\.[a-z]{2,})$"
+        match = re.match(pattern, email)
+        if not match:
+            raise AuthError("Invalid staff email format. Expected format: first.last@{bm|lo}.domain", 400)
+            
+        expected_subdomain = "bm" if role == "branch_manager" else "lo"
+        if match.group("subdomain") != expected_subdomain:
+            raise AuthError(f"Email subdomain does not match role. Expected '{expected_subdomain}'.", 400)
+            
+        if match.group("root_domain") != inst.domain:
+            raise AuthError(f"Email domain must match institution domain '{inst.domain}'.", 400)
+
+    if User.query.filter_by(lending_institution_id=lending_institution_id, email=email).first():
+        raise AuthError ("A user with this email already exists in this institution.", 409)
 
     user = User(
         lending_institution_id=lending_institution_id,
-        email=email.lower().strip(),
+        branch_id=branch_id,
+        email=email,
         phone_number=phone_number,
         national_id_number=national_id_number,
         password_hash=hash_password(password),
@@ -93,9 +116,17 @@ def register_user(
 #authenticate user and update last_login_at
 def authenticate_user(email: str, password: str) -> User:
     user = User.query.filter_by(email=email.lower().strip()).first()
-    if user is None or user.status != "active" or not verify_password(password, user.password_hash):
-        # Deliberately identical error for "no such user" and "wrong password"
-        # so login responses can't be used to enumerate registered emails.
+    
+    if user is None or not verify_password(password, user.password_hash):
+        raise AuthError("Invalid email or password.", 401)
+        
+    if user.lending_institution_id is None:
+        raise AuthError("Invalid email or password.", 401)
+        
+    if user.status.lower() != "active":
+        raise AuthError("Invalid email or password.", 401)
+        
+    if not user.lending_institution or user.lending_institution.status.lower() != "active":
         raise AuthError("Invalid email or password.", 401)
  
     user.last_login_at = datetime.now(timezone.utc)
@@ -104,7 +135,11 @@ def authenticate_user(email: str, password: str) -> User:
 
 #issue tokens
 def issue_tokens(user: User) -> dict:
-    claims = {"lending_institution_id": user.lending_institution_id, "role": user.role}
+    claims = {
+        "lending_institution_id": user.lending_institution_id, 
+        "branch_id": user.branch_id,
+        "role": user.role
+    }
     return {
         "access_token": create_access_token(identity=str(user.id), additional_claims=claims),
         "refresh_token": create_refresh_token(identity=str(user.id), additional_claims=claims),
@@ -140,12 +175,7 @@ permission strings its allowed to do
 """
 PERMISSIONS = {
     "loan_officer": {"customer:create", "loan:create", "repayment:record"},
-    "manager": {"customer:create", "loan:create", "loan:approve", "repayment:record", "reports:view"},
-    "admin": {
-        "customer:create", "loan:create", "loan:approve", "loan:disburse",
-        "repayment:record", "reports:view", "user:manage",
-    },
-    "super_admin": {"*"},  # everything, including cross-module admin actions
+    "branch_manager": {"*"},  # everything, including cross-module admin actions
 }
 
 
@@ -193,8 +223,8 @@ def get_user_institution_id(user_id:int) -> Optional[int]:
     return user.lending_institution_id if user else None
 
 def get_user_contact_info(user_id: int) -> Optional[dict]:
-    # lets other modules resolve a staff member's contact details
-    # without importing foundations.models.User directly
+    # lets other modules (Collections/Communications) resolve a staff member's
+    # contact details without importing foundations.models.User directly
     user = db.session.get(User, user_id)
     if user is None:
         return None

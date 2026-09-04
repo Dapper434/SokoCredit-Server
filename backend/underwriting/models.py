@@ -1,11 +1,15 @@
 from datetime import datetime, timezone
 from extensions import db
 
-LOAN_STATUSES = ("pending","active","restructured","fully_paid","defaulted")
+LOAN_STATUSES = ("pending","active","rejected","restructured","fully_paid","defaulted","written_off")
+
+# A loan in one of these is still "open" — the customer may not take another out
+# until it is settled. rejected / fully_paid / defaulted / written_off are terminal.
+OPEN_LOAN_STATUSES = ("pending", "active", "restructured")
 REPAYMENT_FREQUENCIES = ("daily", "weekly", "lump_sum")
 CREDIT_TIERS = ("A","B","C")
 
-APPROVAL_DECISIONS = ("pending", "approved", "rejected")
+APPROVAL_DECISIONS = ("pending", "approved", "rejected", "countered")
 
 def utcnow():
     return datetime.now(timezone.utc)
@@ -57,6 +61,12 @@ class Loan(db.Model):
     loan_purpose = db.Column(db.String(255), nullable=True)
 
     status = db.Column(db.String(20), nullable=False, default="pending")
+    write_off_reason = db.Column(db.Text, nullable=True)
+
+    # The customer's available credit at the moment they applied. Recorded so a
+    # reviewer can see whether the request exceeded the limit as it stood then,
+    # rather than re-deriving it later against a limit that has since moved.
+    available_credit_at_application = db.Column(db.Numeric(14, 2), nullable=True)
 
     disbursed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     maturity_date = db.Column(db.Date, nullable=True)
