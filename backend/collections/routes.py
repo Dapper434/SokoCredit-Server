@@ -149,8 +149,11 @@ def notification_summary_route():
     """
     For Analytics/reporting. Only counts loan-linked notifications
     """
-    actor_id = _current_user_id()
-    summary = get_notification_summary(actor_id)
+    try:
+        summary = get_notification_summary()
+    except AuthError as exc:
+        return _auth_error_response(exc)
+
     return jsonify(summary), 200
 
 @collections_bp.route("/promises/broken-counts", methods=["GET"])
