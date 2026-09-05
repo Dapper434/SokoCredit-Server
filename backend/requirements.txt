@@ -6,6 +6,7 @@ Flask-CORS==5.0.1
 Flask-Mail==0.10.0
 SQLAlchemy==2.0.36
 alembic==1.14.1
+psycopg2-binary==2.9.10
 bcrypt==4.2.1
 python-dotenv==1.0.1
 marshmallow==3.23.2
