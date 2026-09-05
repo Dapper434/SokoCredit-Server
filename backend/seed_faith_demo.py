@@ -95,8 +95,20 @@ with app.app_context():
 
     db.session.commit()
 
+    from flask_jwt_extended import create_access_token, verify_jwt_in_request
     from underwriting.services import get_available_credit, TIER_MULTIPLIERS
-    avail = get_available_credit(profile.id)
+
+    # get_available_credit() -> get_customer_profile() enforces tenant-scoped
+    # access via verify_institution_access(), which reads JWT claims. That's
+    # correct for real API requests but this script runs outside of one, so
+    # stand up a throwaway token with the right claims just to run the check.
+    token = create_access_token(
+        identity=str(user.id),
+        additional_claims={"lending_institution_id": faulu.id, "role": "customer"},
+    )
+    with app.test_request_context(headers={"Authorization": f"Bearer {token}"}):
+        verify_jwt_in_request()
+        avail = get_available_credit(profile.id)
     print(f"Faith Mauti seeded  (profile_id={profile.id}, user_id={user.id})")
     print(f"  login: phone {PHONE} / PIN {PIN} / Faulu (institution {faulu.id})")
     print(f"  tier {TIER} (x{TIER_MULTIPLIERS[TIER]})  savings {acct.total_savings_balance}  "
