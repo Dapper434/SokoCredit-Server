@@ -224,7 +224,7 @@ def upgrade():
         batch_op.create_unique_constraint('uq_customer_institution_nid', ['lending_institution_id', 'national_id_number'])
         batch_op.create_unique_constraint('uq_customer_institution_phone', ['lending_institution_id', 'phone_number'])
         batch_op.create_foreign_key('fk_customer_profiles_branch_id_branches', 'branches', ['branch_id'], ['id'])
-        batch_op.create_foreign_key('fk_customer_profiles_lending_institution_id_lending_institutions', 'lending_institutions', ['lending_institution_id'], ['id'])
+        batch_op.create_foreign_key('fk_customer_profiles_lending_institution_id', 'lending_institutions', ['lending_institution_id'], ['id'])
 
     with op.batch_alter_table('documents', schema=None) as batch_op:
         batch_op.add_column(sa.Column('storage_path', sa.String(length=500), nullable=True))
@@ -314,7 +314,7 @@ def downgrade():
         batch_op.drop_column('storage_path')
 
     with op.batch_alter_table('customer_profiles', schema=None) as batch_op:
-        batch_op.drop_constraint('fk_customer_profiles_lending_institution_id_lending_institutions', type_='foreignkey')
+        batch_op.drop_constraint('fk_customer_profiles_lending_institution_id', type_='foreignkey')
         batch_op.drop_constraint('fk_customer_profiles_branch_id_branches', type_='foreignkey')
         batch_op.drop_constraint('uq_customer_institution_phone', type_='unique')
         batch_op.drop_constraint('uq_customer_institution_nid', type_='unique')
