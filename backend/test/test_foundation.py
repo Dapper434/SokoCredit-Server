@@ -19,6 +19,16 @@ def client(app):
     return app.test_client()
 
 
+
+def staff_email_for(app, institution_id, first, last, role):
+    """Build a staff email that matches the product's first.last@{bm|lo}.domain rule."""
+    from foundations.models import LendingInstitution
+    subdomain = "lo" if role == "loan_officer" else "bm"
+    with app.app_context():
+        inst = db.session.get(LendingInstitution, institution_id)
+        return f"{first}.{last}@{subdomain}.{inst.domain}"
+
+
 def signup_institution(client, reg_number="BRS-0001", kra_pin="P000111222A", email="admin@sacco.co.ke"):
     return client.post("/api/auth/institutions", json={
         "registered_business_name": "Test SACCO",
@@ -106,25 +116,28 @@ def test_me_requires_token(client):
 def test_admin_can_add_teammate_loan_officer_cannot(client):
     r = signup_institution(client, email="rbac-admin@sacco.co.ke")
     admin_token = r.get_json()["access_token"]
+    inst_id = r.get_json()["institution"]["id"]
+    officer_email = staff_email_for(client.application, inst_id, "officer", "one", "loan_officer")
+    another_email = staff_email_for(client.application, inst_id, "another", "officer", "loan_officer")
 
     r = client.post(
         "/api/auth/users",
         headers={"Authorization": f"Bearer {admin_token}"},
-        json={"email": "officer@sacco.co.ke", "password": "OfficerPass1",
+        json={"email": officer_email, "password": "OfficerPass1",
               "full_name": "Officer One", "role": "loan_officer"},
     )
-    assert r.status_code == 201
+    assert r.status_code == 201, r.get_json()
     assert r.get_json()["status"] == "active"  # teammates start active, unlike the founding admin
 
     r = client.post("/api/auth/lender/login", json={
-        "email": "officer@sacco.co.ke", "password": "OfficerPass1",
+        "email": officer_email, "password": "OfficerPass1",
     })
     officer_token = r.get_json()["token"]
 
     r = client.post(
         "/api/auth/users",
         headers={"Authorization": f"Bearer {officer_token}"},
-        json={"email": "another@sacco.co.ke", "password": "AnotherPass1",
+        json={"email": another_email, "password": "AnotherPass1",
               "full_name": "Another", "role": "loan_officer"},
     )
     assert r.status_code == 403
