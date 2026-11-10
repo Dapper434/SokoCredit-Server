@@ -125,3 +125,53 @@ def test_set_credit_tier_via_service_directly(app, client):
 
     r = client.get(f"/api/origination/customers/{profile_id}", headers={"Authorization": f"Bearer {token}"})
     assert r.get_json()["credit_tier"] == "A"
+
+
+def test_created_profile_is_scoped_to_actor_institution(client):
+    """A new customer profile is stamped with the caller's institution, not
+    a client-supplied id, and cannot be created under another organisation."""
+    token_a, admin_a_id = signup_institution(
+        client, reg_number="ORG-A", kra_pin="PIN-A", email="a@a.co.ke",
+    )
+    token_b, admin_b_id = signup_institution(
+        client, reg_number="ORG-B", kra_pin="PIN-B", email="b@b.co.ke",
+    )
+
+    # Clients cannot choose the institution; the field is rejected as unknown.
+    r = client.post(
+        "/api/origination/customers",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={
+            "user_id": admin_a_id,
+            "national_id_number": "SCOPE-A-1",
+            "lending_institution_id": 999,
+        },
+    )
+    assert r.status_code == 422
+
+    r = client.post(
+        "/api/origination/customers",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"user_id": admin_a_id, "national_id_number": "SCOPE-A-1"},
+    )
+    assert r.status_code == 201, r.get_json()
+    body = r.get_json()
+    inst_a = body["lending_institution_id"]
+    assert inst_a is not None
+
+    # Same national ID is allowed at a different institution.
+    r = client.post(
+        "/api/origination/customers",
+        headers={"Authorization": f"Bearer {token_b}"},
+        json={"user_id": admin_b_id, "national_id_number": "SCOPE-A-1"},
+    )
+    assert r.status_code == 201, r.get_json()
+    assert r.get_json()["lending_institution_id"] != inst_a
+
+    # Staff cannot attach a user from another institution.
+    r = client.post(
+        "/api/origination/customers",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"user_id": admin_b_id, "national_id_number": "SCOPE-CROSS"},
+    )
+    assert r.status_code == 403

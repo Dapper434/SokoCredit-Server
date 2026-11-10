@@ -142,13 +142,25 @@ def create_customer_profile(
 ) -> CustomerProfile:
     #creates customer profile owned bu user_id(loan officer)
 
-    institution_id = get_user_institution_id(user_id)
-    if institution_id is None:
+    # The profile always belongs to the authenticated staff member's
+    # institution — never to a client-supplied id, and never to some
+    # other organisation the payload user_id happens to sit in.
+    actor_institution_id = get_user_institution_id(actor_id)
+    if actor_institution_id is None:
         raise AuthError("No such staff user, or user has no institution.", 400)
 
-    verify_institution_access(institution_id)
+    owner_institution_id = get_user_institution_id(user_id)
+    if owner_institution_id is None:
+        raise AuthError("No such staff user, or user has no institution.", 400)
+    if owner_institution_id != actor_institution_id:
+        raise AuthError("This resource does not belong to your organization.", 403)
 
-    if CustomerProfile.query.filter_by(national_id_number=national_id_number).first():
+    verify_institution_access(actor_institution_id)
+
+    if CustomerProfile.query.filter_by(
+        national_id_number=national_id_number,
+        lending_institution_id=actor_institution_id,
+    ).first():
         raise AuthError("A customer profile with this national ID already exists." ,409)
 
     if market_stall_id is not None and db.session.get(MarketStall, market_stall_id) is None:
@@ -156,6 +168,7 @@ def create_customer_profile(
 
     profile = CustomerProfile(
         user_id=user_id,
+        lending_institution_id=actor_institution_id,
         national_id_number=national_id_number,
         date_of_birth=date_of_birth,
         gender=gender,
@@ -177,7 +190,7 @@ def create_customer_profile(
         action="create",
         before=None,
         after={"national_id_number": profile.national_id_number, "user_id": user_id},
-        lending_institution_id=institution_id,
+        lending_institution_id=actor_institution_id,
     )
     return profile
 

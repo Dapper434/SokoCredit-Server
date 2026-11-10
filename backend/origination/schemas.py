@@ -33,6 +33,7 @@ class BadgeAwardSchema(Schema):
 class CustomerProfileSchema(Schema):
     id = fields.Int(dump_only=True)
     user_id = fields.Int(dump_only=True)
+    lending_institution_id = fields.Int(dump_only=True)
     national_id_number = fields.Str(dump_only=True)
     date_of_birth = fields.Date(dump_only=True, allow_none=True)
     gender = fields.Str(dump_only=True, allow_none=True)
