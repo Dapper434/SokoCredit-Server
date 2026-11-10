@@ -42,6 +42,7 @@ def create_test_data(client, app):
         inst = LendingInstitution.query.first()
         customer = CustomerProfile(
             user_id=admin_id,
+            lending_institution_id=inst.id,
             national_id_number="12345678",
             credit_tier="A"
         )
@@ -121,9 +122,13 @@ def test_process_repayment(app, client):
     
     with app.app_context():
         schedules = RepaymentSchedule.query.filter_by(loan_id=loan_id).order_by(RepaymentSchedule.installment_number.asc()).all()
+        # 300 is allocated oldest-first across the generated schedule
+        # (amounts come from calculate_loan_totals, not a flat 10%).
+        payment = Decimal("300.00")
         assert schedules[0].status == "paid"
-        assert schedules[0].amount_paid == schedules[0].total_due # 275.00
-        
+        assert schedules[0].amount_paid == schedules[0].total_due
+        remainder = payment - schedules[0].total_due
+        assert remainder > 0
         assert schedules[1].status == "partial"
-        assert schedules[1].amount_paid == Decimal("25.00")
+        assert schedules[1].amount_paid == remainder
 
