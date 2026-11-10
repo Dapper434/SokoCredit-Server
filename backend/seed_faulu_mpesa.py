@@ -28,7 +28,16 @@ from servicing.mpesa.config import encrypt_secret
 
 # Safaricom's public Sandbox values (shared test shortcode/passkey).
 SANDBOX_SHORTCODE = "174379"
-SANDBOX_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+
+def sandbox_passkey():
+    """Safaricom published sandbox passkey for test shortcode 174379, read from env."""
+    pk = os.environ.get("FAULU_MPESA_PASSKEY") or os.environ.get("MPESA_SANDBOX_PASSKEY")
+    if not pk:
+        raise SystemExit(
+            "Set MPESA_SANDBOX_PASSKEY (Safaricom published sandbox passkey "
+            "for shortcode 174379) or FAULU_MPESA_PASSKEY."
+        )
+    return pk
 
 app = create_app()
 with app.app_context():
@@ -53,7 +62,7 @@ with app.app_context():
 
     # Passkey/shortcode: default to Safaricom's shared sandbox test values;
     # override only if your Daraja app was assigned its own.
-    pk = os.environ.get("FAULU_MPESA_PASSKEY", SANDBOX_PASSKEY)
+    pk = sandbox_passkey()
     sc = os.environ.get("FAULU_MPESA_SHORTCODE", SANDBOX_SHORTCODE)
 
     faulu.mpesa_consumer_key = encrypt_secret(ck)
@@ -64,7 +73,7 @@ with app.app_context():
     db.session.commit()
 
     print(f"FAULU: seeded sandbox M-Pesa credentials  shortcode={sc}  "
-          f"passkey={'custom' if pk != SANDBOX_PASSKEY else 'public-sandbox'}  "
+          f"passkey={'custom' if os.environ.get('FAULU_MPESA_PASSKEY') else 'public-sandbox'}  "
           f"consumer_key={'*' * (len(ck) - 4)}{ck[-4:]}")
 
     others = LendingInstitution.query.filter(

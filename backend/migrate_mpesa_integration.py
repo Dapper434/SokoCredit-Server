@@ -60,7 +60,16 @@ INSTITUTION_COLS = {
 
 # Safaricom's public Sandbox values.
 SANDBOX_SHORTCODE = "174379"
-SANDBOX_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+
+def sandbox_passkey():
+    """Safaricom published sandbox passkey for test shortcode 174379, read from env."""
+    pk = os.environ.get("FAULU_MPESA_PASSKEY") or os.environ.get("MPESA_SANDBOX_PASSKEY")
+    if not pk:
+        raise SystemExit(
+            "Set MPESA_SANDBOX_PASSKEY (Safaricom published sandbox passkey "
+            "for shortcode 174379) or FAULU_MPESA_PASSKEY."
+        )
+    return pk
 
 app = create_app()
 with app.app_context():
@@ -116,7 +125,7 @@ with app.app_context():
         # Passkey: default is Safaricom's public value for test shortcode 174379.
         # Override with FAULU_MPESA_PASSKEY only if your Daraja app shows a
         # different per-app passkey.
-        pk = os.environ.get("FAULU_MPESA_PASSKEY", SANDBOX_PASSKEY)
+        pk = sandbox_passkey()
         # Shortcode: 174379 is the sandbox test shortcode that delivers a real
         # STK prompt to a real phone. Override only if you know you need to.
         sc = os.environ.get("FAULU_MPESA_SHORTCODE", SANDBOX_SHORTCODE)
@@ -129,7 +138,7 @@ with app.app_context():
         db.session.commit()
         placeholder = ck.startswith("REPLACE_WITH")
         print(f"FAULU: seeded sandbox M-Pesa credentials  shortcode={sc}  "
-              f"passkey={'custom' if pk != SANDBOX_PASSKEY else 'public-sandbox'}  "
+              f"passkey={'custom' if os.environ.get('FAULU_MPESA_PASSKEY') else 'public-sandbox'}  "
               f"({'PLACEHOLDER consumer key/secret — set FAULU_MPESA_CONSUMER_KEY/SECRET env and re-run' if placeholder else 'real consumer key/secret from env'})")
 
     others = LendingInstitution.query.filter(
