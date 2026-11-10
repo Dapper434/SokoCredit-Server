@@ -1,20 +1,36 @@
-
+# Secrets and environment
 .env
- 
-# Virtual environment
-venv/
-env/
- 
+.env.*
+!.env.example
+
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
 .pytest_cache/
- 
-# Database (each dev generates their own locally via `flask db upgrade`)
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# Databases and leftovers
 *.db
+*.db-*
+*.db.*
+*.sqlite
 *.sqlite3
- 
-# IDE
-.vscode/
+*.stale-bak*
+
+# Node / frontend build
+node_modules/
+dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
 .idea/
+.vscode/
+
+# Local instance data
+backend/instance/
